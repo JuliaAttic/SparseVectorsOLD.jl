@@ -1,5 +1,7 @@
-using SparseData
-using Base.Test
+tests = ["sparsevec"]
 
-# write your own tests here
-@test 1 == 1
+for t in tests
+    fp = "$t.jl"
+    println("Running $fp ...")
+    include(fp)
+end
