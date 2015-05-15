@@ -19,11 +19,10 @@ end
 SparseVector{Tv,Ti}(n::Integer, nzind::Vector{Ti}, nzval::Vector{Tv}) =
     SparseVector{Tv,Ti}(convert(Int, n), nzind, nzval)
 
-
 immutable SparseVectorView{Tv,Ti<:Integer} <: AbstractSparseVector{Tv,Ti}
-    n::Int              # the number of elements
-    nzind::Vector{Ti}   # the indices of nonzeros
-    nzval::Vector{Tv}   # the values of nonzeros
+    n::Int                  # the number of elements
+    nzind::CVecView{Ti}     # the indices of nonzeros
+    nzval::CVecView{Tv}     # the values of nonzeros
 
     function SparseVectorView(n::Int, nzind::CVecView{Ti}, nzval::CVecView{Tv})
         n >= 0 || throw(ArgumentError("The number of elements must be non-negative."))
@@ -36,8 +35,27 @@ end
 SparseVectorView{Tv,Ti}(n::Integer, nzind::CVecView{Ti}, nzval::CVecView{Tv}) =
     SparseVectorView{Tv,Ti}(convert(Int, n), nzind, nzval)
 
-
 typealias GenericSparseVector{Tv,Ti} Union(SparseVector{Tv,Ti}, SparseVectorView{Tv,Ti})
+
+
+### Conversion
+
+# convert SparseMatrixCSC to SparseVector
+function Base.convert{Tv,Ti}(::Type{SparseVector{Tv,Ti}}, s::SparseMatrixCSC{Tv,Ti})
+    size(s, 2) == 1 || throw(ArgumentError("The input argument must have a single-column."))
+    SparseVector(s.m, s.rowval, s.nzval)
+end
+
+Base.convert{Tv,Ti}(::Type{SparseVector{Tv}}, s::SparseMatrixCSC{Tv,Ti}) =
+    convert(SparseVector{Tv,Ti}, s)
+
+Base.convert{Tv,Ti}(::Type{SparseVector}, s::SparseMatrixCSC{Tv,Ti}) =
+    convert(SparseVector{Tv,Ti}, s)
+
+
+### View
+
+view(x::SparseVector) = SparseVectorView(length(x), view(x.nzind), view(x.nzval))
 
 
 ### Basic properties
@@ -49,7 +67,6 @@ Base.nnz(x::GenericSparseVector) = length(x.nzval)
 Base.countnz(x::GenericSparseVector) = countnz(x.nzval)
 Base.nonzeros(x::GenericSparseVector) = x.nzval
 
-
 ### Element access
 
 function Base.getindex{Tv}(x::GenericSparseVector{Tv}, i::Int)
@@ -57,7 +74,6 @@ function Base.getindex{Tv}(x::GenericSparseVector{Tv}, i::Int)
     ii = searchsortedfirst(x.nzind, i)
     (ii <= m && x.nzind[ii] == i) ? x.nzval[ii] : zero(Tv)
 end
-
 
 ### Array manipulation
 
