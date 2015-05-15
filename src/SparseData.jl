@@ -1,5 +1,9 @@
 module SparseData
 
-# package code goes here
+using ArrayViews
+
+
+
+
 
 end # module
