@@ -50,6 +50,15 @@ Base.countnz(x::GenericSparseVector) = countnz(x.nzval)
 Base.nonzeros(x::GenericSparseVector) = x.nzval
 
 
+### Element access
+
+function Base.getindex{Tv}(x::GenericSparseVector{Tv}, i::Int)
+    m = length(x.nzind)
+    ii = searchsortedfirst(x.nzind, i)
+    (ii <= m && x.nzind[ii] == i) ? x.nzval[ii] : zero(Tv)
+end
+
+
 ### Array manipulation
 
 function Base.full{Tv}(x::GenericSparseVector{Tv})

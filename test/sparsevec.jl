@@ -16,6 +16,7 @@ x = SparseVector(8, [2, 5, 6], [1.25, -0.75, 3.5])
 @test nnz(x) == 3
 @test nonzeros(x) == [1.25, -0.75, 3.5]
 
+
 # full
 
 xf = zeros(8)
@@ -33,6 +34,12 @@ xc = copy(x)
 @test x.n == xc.n
 @test x.nzind == xc.nzind
 @test x.nzval == xc.nzval
+
+# getindex
+
+for i = 1:length(x)
+    @test x[i] == xf[i]
+end
 
 # sum
 
