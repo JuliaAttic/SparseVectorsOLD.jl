@@ -8,34 +8,54 @@ immutable SparseVector{Tv,Ti<:Integer} <: AbstractSparseVector{Tv,Ti}
     nzind::Vector{Ti}   # the indices of nonzeros
     nzval::Vector{Tv}   # the values of nonzeros
 
-    function SparseVector(n::Int, nzind::Vector{Ti}, nzval::Vector{Tv})
+    function SparseVector(n::Integer, nzind::Vector{Ti}, nzval::Vector{Tv})
         n >= 0 || throw(ArgumentError("The number of elements must be non-negative."))
         length(nzind) == length(nzval) ||
             throw(DimensionMismatch("The lengths of nzind and nzval are inconsistent."))
-        new(n, nzind, nzval)
+        new(convert(Int, n), nzind, nzval)
     end
 end
 
 SparseVector{Tv,Ti}(n::Integer, nzind::Vector{Ti}, nzval::Vector{Tv}) =
-    SparseVector{Tv,Ti}(convert(Int, n), nzind, nzval)
+    SparseVector{Tv,Ti}(n, nzind, nzval)
 
 immutable SparseVectorView{Tv,Ti<:Integer} <: AbstractSparseVector{Tv,Ti}
     n::Int                  # the number of elements
     nzind::CVecView{Ti}     # the indices of nonzeros
     nzval::CVecView{Tv}     # the values of nonzeros
 
-    function SparseVectorView(n::Int, nzind::CVecView{Ti}, nzval::CVecView{Tv})
+    function SparseVectorView(n::Integer, nzind::CVecView{Ti}, nzval::CVecView{Tv})
         n >= 0 || throw(ArgumentError("The number of elements must be non-negative."))
         length(nzind) == length(nzval) ||
             throw(DimensionMismatch("The lengths of nzind and nzval are inconsistent."))
-        new(n, nzind, nzval)
+        new(convert(Int, n), nzind, nzval)
     end
 end
 
 SparseVectorView{Tv,Ti}(n::Integer, nzind::CVecView{Ti}, nzval::CVecView{Tv}) =
-    SparseVectorView{Tv,Ti}(convert(Int, n), nzind, nzval)
+    SparseVectorView{Tv,Ti}(n, nzind, nzval)
 
 typealias GenericSparseVector{Tv,Ti} Union(SparseVector{Tv,Ti}, SparseVectorView{Tv,Ti})
+
+
+### Basic properties
+
+Base.length(x::GenericSparseVector) = x.n
+Base.size(x::GenericSparseVector) = (x.n,)
+
+Base.nnz(x::GenericSparseVector) = length(x.nzval)
+Base.countnz(x::GenericSparseVector) = countnz(x.nzval)
+Base.nonzeros(x::GenericSparseVector) = x.nzval
+
+### Element access
+
+function Base.getindex{Tv}(x::GenericSparseVector{Tv}, i::Int)
+    m = length(x.nzind)
+    ii = searchsortedfirst(x.nzind, i)
+    (ii <= m && x.nzind[ii] == i) ? x.nzval[ii] : zero(Tv)
+end
+
+Base.getindex(x::GenericSparseVector, i::Integer) = x[convert(Int, i)]
 
 
 ### Conversion
@@ -113,24 +133,6 @@ SparseVector{Tv,Ti}(n::Integer, s::AbstractVector{@compat(Tuple{Ti,Tv})}) =
 ### View
 
 view(x::SparseVector) = SparseVectorView(length(x), view(x.nzind), view(x.nzval))
-
-
-### Basic properties
-
-Base.length(x::GenericSparseVector) = x.n
-Base.size(x::GenericSparseVector) = (x.n,)
-
-Base.nnz(x::GenericSparseVector) = length(x.nzval)
-Base.countnz(x::GenericSparseVector) = countnz(x.nzval)
-Base.nonzeros(x::GenericSparseVector) = x.nzval
-
-### Element access
-
-function Base.getindex{Tv}(x::GenericSparseVector{Tv}, i::Int)
-    m = length(x.nzind)
-    ii = searchsortedfirst(x.nzind, i)
-    (ii <= m && x.nzind[ii] == i) ? x.nzval[ii] : zero(Tv)
-end
 
 ### Array manipulation
 
