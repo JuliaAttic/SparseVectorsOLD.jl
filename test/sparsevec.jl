@@ -1,5 +1,5 @@
 using Base.Test
-using SparseData
+using SparseExtensions
 
 # construction
 

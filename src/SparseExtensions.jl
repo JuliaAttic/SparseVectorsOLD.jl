@@ -1,4 +1,4 @@
-module SparseData
+module SparseExtensions
 
 using ArrayViews
 
