@@ -80,6 +80,11 @@ xc = SparseVector(8, dct)
 @test isa(xc, SparseVector{Float64,Int})
 @test exact_equal(x, xc)
 
+ps = [(5, -0.75), (2, 1.25), (6, 3.5)]
+xc = SparseVector(8, ps)
+@test isa(xc, SparseVector{Float64,Int})
+@test exact_equal(x, xc)
+
 # copy
 
 xc = copy(x)
