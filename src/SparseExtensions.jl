@@ -1,6 +1,7 @@
 module SparseExtensions
 
 using ArrayViews
+using Compat
 
 import Base: +, .+, *, .*
 import ArrayViews: view
