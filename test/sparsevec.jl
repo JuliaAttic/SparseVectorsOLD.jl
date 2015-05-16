@@ -2,6 +2,7 @@ using Base.Test
 using SparseExtensions
 
 import SparseExtensions: GenericSparseVector
+import Base.LinAlg: axpy!
 
 # auxiliary tools
 
@@ -113,7 +114,7 @@ xa = SparseVector(8, [1,2,5,6,7], [3.25,5.25,-0.75,-2.0,-6.0])
 # axpy
 
 y = full(x)
-@test is(LinAlg.axpy!(2.0, x2, y), y)
+@test is(axpy!(2.0, x2, y), y)
 @test y == full(x2 * 2.0 + x)
 
 
