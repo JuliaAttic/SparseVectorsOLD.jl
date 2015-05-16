@@ -195,6 +195,10 @@ Base.sum(x::GenericSparseVector) = sum(x.nzval)
 Base.sumabs(x::GenericSparseVector) = sumabs(x.nzval)
 Base.sumabs2(x::GenericSparseVector) = sumabs2(x.nzval)
 
+Base.vecnorm(x::GenericSparseVector) = vecnorm(x.nzval)
+Base.vecnorm(x::GenericSparseVector, p::Real) = vecnorm(x.nzval, p)
+
+
 function Base.dot{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::GenericSparseVector{Ty})
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
