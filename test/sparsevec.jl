@@ -75,6 +75,10 @@ xc = convert(SparseVector, xf)
 @test isa(xc, SparseVector{Float64,Int})
 @test exact_equal(x, xc)
 
+dct = Dict{Int,Float64}(2=>1.25, 5=>-0.75, 6=>3.5)
+xc = SparseVector(8, dct)
+@test isa(xc, SparseVector{Float64,Int})
+@test exact_equal(x, xc)
 
 # copy
 

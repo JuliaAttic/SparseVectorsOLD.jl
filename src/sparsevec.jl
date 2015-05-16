@@ -41,7 +41,7 @@ typealias GenericSparseVector{Tv,Ti} Union(SparseVector{Tv,Ti}, SparseVectorView
 ### Conversion
 
 # convert SparseMatrixCSC to SparseVector
-function Base.convert{Tv,Ti}(::Type{SparseVector{Tv,Ti}}, s::SparseMatrixCSC{Tv,Ti})
+function Base.convert{Tv,Ti<:Integer}(::Type{SparseVector{Tv,Ti}}, s::SparseMatrixCSC{Tv,Ti})
     size(s, 2) == 1 || throw(ArgumentError("The input argument must have a single-column."))
     SparseVector(s.m, s.rowval, s.nzval)
 end
@@ -53,6 +53,7 @@ Base.convert{Tv,Ti}(::Type{SparseVector}, s::SparseMatrixCSC{Tv,Ti}) =
     convert(SparseVector{Tv,Ti}, s)
 
 
+# convert Vector to SparseVector
 function Base.convert{Tv}(::Type{SparseVector{Tv,Int}}, s::Vector{Tv})
     n = length(s)
     nzind = Array(Int, 0)
@@ -72,7 +73,30 @@ Base.convert{Tv}(::Type{SparseVector{Tv}}, s::Vector{Tv}) =
 
 Base.convert{Tv}(::Type{SparseVector}, s::Vector{Tv}) =
     convert(SparseVector{Tv,Int}, s)
-    
+
+
+# make SparseVector from dictionary
+function SparseVector{Tv,Ti<:Integer}(n::Int, s::Associative{Ti,Tv})
+    m = length(s)
+    nzind = Array(Ti, 0)
+    nzval = Array(Tv, 0)
+    sizehint!(nzind, m)
+    sizehint!(nzval, m)
+
+    for (k, v) in s
+        if v != zero(v)
+            push!(nzind, k)
+            push!(nzval, v)
+        end
+    end
+
+    p = sortperm(nzind)
+    permute!(nzind, p)
+    permute!(nzval, p)
+
+    return SparseVector(n, nzind, nzval)
+end
+
 
 ### View
 
@@ -155,8 +179,11 @@ function + {Tx,Ty}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
         jy = ynzind[iy]
 
         if jx == jy
-            push!(rind, jx)
-            push!(rval, xnzval[ix] + ynzval[iy])
+            v = xnzval[ix] + ynzval[iy]
+            if v != zero(v)
+                push!(rind, jx)
+                push!(rval, v)
+            end
             ix += 1
             iy += 1
         elseif jx < jy
