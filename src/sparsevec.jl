@@ -53,6 +53,27 @@ Base.convert{Tv,Ti}(::Type{SparseVector}, s::SparseMatrixCSC{Tv,Ti}) =
     convert(SparseVector{Tv,Ti}, s)
 
 
+function Base.convert{Tv}(::Type{SparseVector{Tv,Int}}, s::Vector{Tv})
+    n = length(s)
+    nzind = Array(Int, 0)
+    nzval = Array(Tv, 0)
+    for i = 1:n
+        @inbounds v = s[i]
+        if v != zero(v)
+            push!(nzind, i)
+            push!(nzval, v)
+        end
+    end
+    return SparseVector(n, nzind, nzval)
+end
+
+Base.convert{Tv}(::Type{SparseVector{Tv}}, s::Vector{Tv}) =
+    convert(SparseVector{Tv,Int}, s)
+
+Base.convert{Tv}(::Type{SparseVector}, s::Vector{Tv}) =
+    convert(SparseVector{Tv,Int}, s)
+    
+
 ### View
 
 view(x::SparseVector) = SparseVectorView(length(x), view(x.nzind), view(x.nzval))

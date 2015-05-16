@@ -25,13 +25,6 @@ x = SparseVector(8, [2, 5, 6], [1.25, -0.75, 3.5])
 @test nnz(x) == 3
 @test nonzeros(x) == [1.25, -0.75, 3.5]
 
-# conversion
-
-s = sparse([2, 5, 6], [1, 1, 1], [1.25, -0.75, 3.5], 8, 1)
-xs = convert(SparseVector, s)
-
-@test isa(xs, SparseVector{Float64,Int})
-@test xs == x
 
 # view
 
@@ -67,6 +60,20 @@ xf2[6] = -5.5
 xf2[7] = -6.0
 @test isa(full(x2), Vector{Float64})
 @test full(x2) == xf2
+
+
+# conversion
+
+s = sparse([2, 5, 6], [1, 1, 1], [1.25, -0.75, 3.5], 8, 1)
+xs = convert(SparseVector, s)
+
+@test isa(xs, SparseVector{Float64,Int})
+@test xs == x
+
+xc = convert(SparseVector, xf)
+@test isa(xc, SparseVector{Float64,Int})
+@test exact_equal(x, xc)
+
 
 # copy
 
