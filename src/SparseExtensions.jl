@@ -2,6 +2,7 @@ module SparseExtensions
 
 using ArrayViews
 
+import Base: +, .+, *, .*
 import ArrayViews: view
 
 export

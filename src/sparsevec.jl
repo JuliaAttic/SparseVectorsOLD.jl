@@ -95,6 +95,102 @@ Base.copy(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), copy(x.nzva
 
 ### Computation
 
+Base.scale!(x::GenericSparseVector, a::Number) = (scale!(x.nzval, a); x)
+
+Base.scale!(a::Number, x::GenericSparseVector) = scale!(x, a)
+
+Base.scale{T<:Number,S<:Number}(x::GenericSparseVector{T}, a::S) =
+    SparseVector(x.n, copy(x.nzind), scale(x.nzval, a))
+
+Base.scale(a::Number, x::GenericSparseVector) = scale(x, a)
+
+* (x::GenericSparseVector, a::Number) = scale(x, a)
+* (a::Number, x::GenericSparseVector) = scale(x, a)
+.* (x::GenericSparseVector, a::Number) = scale(x, a)
+.* (a::Number, x::GenericSparseVector) = scale(x, a)
+
+
+function + {Tx,Ty}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
+    R = typeof(zero(Tx) + zero(Ty))
+    n = length(x)
+    length(y) == n || throw(DimensionMismatch())
+
+    xnzind = x.nzind
+    xnzval = x.nzval
+    ynzind = y.nzind
+    ynzval = y.nzval
+    mx = length(xnzind)
+    my = length(ynzind)
+
+    ix = 1
+    iy = 1
+    rind = Array(Int, 0)
+    rval = Array(R, 0)
+    sizehint!(rind, mx + my)
+    sizehint!(rval, mx + my)
+
+    while ix <= mx && iy <= my
+        jx = xnzind[ix]
+        jy = ynzind[iy]
+
+        if jx == jy
+            push!(rind, jx)
+            push!(rval, xnzval[ix] + ynzval[iy])
+            ix += 1
+            iy += 1
+        elseif jx < jy
+            push!(rind, jx)
+            push!(rval, xnzval[ix])
+            ix += 1
+        else
+            push!(rind, jy)
+            push!(rval, ynzval[iy])
+            iy += 1
+        end
+    end
+
+    while ix <= mx
+        push!(rind, xnzind[ix])
+        push!(rval, xnzval[ix])
+        ix += 1
+    end
+
+    while iy <= my
+        push!(rind, ynzind[iy])
+        push!(rval, ynzval[iy])
+        iy += 1
+    end
+
+    return SparseVector(n, rind, rval)
+end
+
+.+ (x::GenericSparseVector, y::GenericSparseVector) = (x + y)
+
+
+function Base.LinAlg.axpy!(a::Number, x::GenericSparseVector, y::StridedVector)
+    length(x) == length(y) || throw(DimensionMismatch())
+
+    nzind = x.nzind
+    nzval = x.nzval
+    m = length(nzind)
+
+    if a == one(a)
+        for i = 1:m
+            y[nzind[i]] += nzval[i]
+        end
+    elseif a == -one(a)
+        for i = 1:m
+            y[nzind[i]] -= nzval[i]
+        end
+    else
+        for i = 1:m
+            y[nzind[i]] += a * nzval[i]
+        end
+    end
+    return y
+end
+
+
 Base.sum(x::GenericSparseVector) = sum(x.nzval)
 Base.sumabs(x::GenericSparseVector) = sumabs(x.nzval)
 Base.sumabs2(x::GenericSparseVector) = sumabs2(x.nzval)

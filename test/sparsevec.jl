@@ -1,6 +1,15 @@
 using Base.Test
 using SparseExtensions
 
+import SparseExtensions: GenericSparseVector
+
+# auxiliary tools
+
+function exact_equal(x::GenericSparseVector, y::GenericSparseVector)
+    x.n == y.n && x.nzind == y.nzind && x.nzval == y.nzval
+end
+
+
 # construction
 
 x = SparseVector(8, [2, 5, 6], [1.25, -0.75, 3.5])
@@ -64,16 +73,42 @@ xf2[7] = -6.0
 xc = copy(x)
 @test !is(x.nzind, xc.nzval)
 @test !is(x.nzval, xc.nzval)
-
-@test x.n == xc.n
-@test x.nzind == xc.nzind
-@test x.nzval == xc.nzval
+@test exact_equal(x, xc)
 
 # getindex
 
 for i = 1:length(x)
     @test x[i] == xf[i]
 end
+
+# scale
+
+sx = SparseVector(x.n, x.nzind, x.nzval * 2.5)
+
+@test exact_equal(scale(x, 2.5), sx)
+@test exact_equal(scale(2.5, x), sx)
+@test exact_equal(x * 2.5, sx)
+@test exact_equal(2.5 * x, sx)
+@test exact_equal(x .* 2.5, sx)
+@test exact_equal(2.5 .* x, sx)
+
+xc = copy(x)
+@test is(scale!(xc, 2.5), xc)
+@test exact_equal(xc, sx)
+
+# add
+
+xa = SparseVector(8, [1,2,5,6,7], [3.25,5.25,-0.75,-2.0,-6.0])
+
+@test exact_equal(x + x, x * 2)
+@test exact_equal(x + x2, xa)
+
+# axpy
+
+y = full(x)
+@test is(LinAlg.axpy!(2.0, x2, y), y)
+@test y == full(x2 * 2.0 + x)
+
 
 # sum
 
