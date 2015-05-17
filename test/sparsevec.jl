@@ -21,6 +21,7 @@ x = SparseVector(8, [2, 5, 6], [1.25, -0.75, 3.5])
 @test size(x) == (8,)
 @test size(x,1) == 8
 @test size(x,2) == 1
+@test !isempty(x)
 
 @test countnz(x) == 3
 @test nnz(x) == 3
@@ -40,6 +41,7 @@ x2 = view(_x2)
 @test size(x2) == (8,)
 @test size(x2,1) == 8
 @test size(x2,2) == 1
+@test !isempty(x2)
 
 @test countnz(x2) == 4
 @test nnz(x2) == 4

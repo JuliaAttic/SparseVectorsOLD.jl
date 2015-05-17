@@ -8,7 +8,7 @@ immutable SparseMatrixCSCView{Tv,Ti<:Integer} <: AbstractSparseMatrix{Tv,Ti}
     rowval::CVecView{Ti}    # row indices of nonzeros
     nzval::CVecView{Tv}     # nonzero values
 
-    function SparseMatrixCSCView(m::Integer, n::Integer, colptr::Vector{Ti}, rowval::Vector{Ti}, nzval::Vector{Tv})
+    function SparseMatrixCSCView(m::Integer, n::Integer, colptr::Vector{Ti}, rowval::CVecView{Ti}, nzval::CVecView{Tv})
         m >= 0 || throw(ArgumentError("The number of rows must be non-negative."))
         n >= 0 || throw(ArgumentError("The number of columns must be non-negative."))
         length(colptr) == n+1 || throw(DimensionMismatch())
@@ -17,7 +17,7 @@ immutable SparseMatrixCSCView{Tv,Ti<:Integer} <: AbstractSparseMatrix{Tv,Ti}
     end
 end
 
-SparseMatrixCSCView{Tv,Ti<:Integer}(m::Integer, n::Integer, colptr::Vector{Ti}, rowval::Vector{Ti}, nzval::Vector{Tv}) =
+SparseMatrixCSCView{Tv,Ti<:Integer}(m::Integer, n::Integer, colptr::Vector{Ti}, rowval::CVecView{Ti}, nzval::CVecView{Tv}) =
     SparseMatrixCSCView{Tv,Ti}(m, n, colptr, rowval, nzval)
 
 
@@ -38,7 +38,7 @@ function Base.getindex{Tv}(x::SparseMatrixCSCView{Tv}, i::Int, j::Int)
     r1 = convert(Int, x.colptr[j])
     r2 = convert(Int, x.colptr[j+1]) - 1
     (r1 > r2) && return zero(Tv)
-    r1 = searchsorted(x.rowval, i, r1, r2, Forward)
+    r1 = searchsortedfirst(x.rowval, i, r1, r2, Base.Forward)
     (r1 <= r2 && x.rowval[r1] == i) ? x.nzval[r1] : zero(Tv)
 end
 
@@ -63,8 +63,29 @@ function view(x::Union(SparseMatrixCSC,SparseMatrixCSCView), ::Colon, J::UnitRan
     (1 <= jfirst <= x.n && jlast <= x.n) || throw(BoundsError())
     r1 = x.colptr[jfirst]
     r2 = x.colptr[jlast+1] - one(r1)
-    newcolptr = view(x.colptr, J) - (r1 - one(r1))
-    rgn = convert(Int, r1) : convert(Int, r2)
+    newcolptr = view(x.colptr, jfirst:jlast+1) - (r1 - one(r1))
+    rgn = r1:r2
     SparseMatrixCSCView(x.m, length(J), newcolptr,
         view(x.rowval, rgn), view(x.nzval, rgn))
 end
+
+
+### Array manipulation
+
+function Base.full{Tv}(x::SparseMatrixCSCView{Tv})
+    m, n = size(x)
+    r = zeros(Tv, m, n)
+    rowind = x.rowval
+    nzval = x.nzval
+    for j = 1:n
+        r1 = convert(Int, x.colptr[j])
+        r2 = convert(Int, x.colptr[j+1]) - 1
+        for i = r1:r2
+            r[rowind[i], j] = nzval[i]
+        end
+    end
+    return r
+end
+
+Base.copy{Tv,Ti<:Integer}(x::SparseMatrixCSCView{Tv,Ti}) =
+    SparseMatrixCSC{Tv,Ti}(size(x,1), size(x,2), x.colptr, copy(x.rowval), copy(x.nzval))

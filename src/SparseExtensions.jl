@@ -12,7 +12,10 @@ export
     view,
 
     # sparsevec
-    SparseVector, SparseVectorView
+    SparseVector, SparseVectorView,
+
+    # sparsematview
+    SparseMatrixCSCView
 
 
 # sources
