@@ -1,8 +1,8 @@
-# SparseExtensions
+# SparseVectors
 
-A Julia package to provide extended support of sparse vectors and matrices.
+A Julia package to support sparse vectors.
 
-[![Build Status](https://travis-ci.org/lindahua/SparseExtensions.jl.svg?branch=master)](https://travis-ci.org/lindahua/SparseExtensions.jl)
+[![Build Status](https://travis-ci.org/lindahua/SparseVectors.jl.svg?branch=master)](https://travis-ci.org/lindahua/SparseVectors.jl)
 
 ## Overview
 

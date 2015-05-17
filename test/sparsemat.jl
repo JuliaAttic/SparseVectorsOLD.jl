@@ -1,5 +1,5 @@
 using Base.Test
-using SparseExtensions
+using SparseVectors
 
 S = sprand(4, 8, 0.5)
 Sf = full(S)

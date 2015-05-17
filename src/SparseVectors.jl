@@ -1,4 +1,4 @@
-module SparseExtensions
+module SparseVectors
 
 using ArrayViews
 using Compat

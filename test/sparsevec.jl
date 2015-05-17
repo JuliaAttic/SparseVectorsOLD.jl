@@ -1,7 +1,7 @@
 using Base.Test
-using SparseExtensions
+using SparseVectors
 
-import SparseExtensions: GenericSparseVector
+import SparseVectors: GenericSparseVector
 import Base.LinAlg: axpy!
 
 # auxiliary tools
