@@ -111,7 +111,7 @@ Base.vecnorm(x::SparseMatrixCSCView, p::Real=2) = vecnorm(x.nzval, p)
 
 ### sum along dimensions
 
-function Base.sum{Tv}(x::GenericSparseMatrixCSC{Tv}, dim::Integer)
+function _sum{Tv}(x::GenericSparseMatrixCSC{Tv}, dim::Integer)
     m, n = size(x)
     Td = typeof(zero(Tv) + zero(Tv))
     if 1 <= dim <= 2
@@ -146,3 +146,6 @@ function Base.sum{Tv}(x::GenericSparseMatrixCSC{Tv}, dim::Integer)
         convert(Matrix{Td}, full(x))
     end::Matrix{Td}
 end
+
+Base.sum(x::SparseMatrixCSC, dim::Integer) = _sum(x, dim)
+Base.sum(x::SparseMatrixCSCView, dim::Integer) = _sum(x, dim)
