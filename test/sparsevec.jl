@@ -128,6 +128,37 @@ for i = 1:length(x)
     @test x[i] == xf[i]
 end
 
+# setindex
+
+xc = SparseVector(8)
+xc[3] = 2.0
+@test exact_equal(xc, SparseVector(8, [3], [2.0]))
+
+xc = copy(x)
+xc[5] = 2.0
+@test exact_equal(xc, SparseVector(8, [2, 5, 6], [1.25, 2.0, 3.5]))
+
+xc = copy(x)
+xc[3] = 4.0
+@test exact_equal(xc, SparseVector(8, [2, 3, 5, 6], [1.25, 4.0, -0.75, 3.5]))
+
+xc[1] = 6.0
+@test exact_equal(xc, SparseVector(8, [1, 2, 3, 5, 6], [6.0, 1.25, 4.0, -0.75, 3.5]))
+
+xc[8] = -1.5
+@test exact_equal(xc, SparseVector(8, [1, 2, 3, 5, 6, 8], [6.0, 1.25, 4.0, -0.75, 3.5, -1.5]))
+
+xc = copy(x)
+xc[5] = 0.0
+@test exact_equal(xc, SparseVector(8, [2, 6], [1.25, 3.5]))
+
+xc[6] = 0.0
+@test exact_equal(xc, SparseVector(8, [2], [1.25]))
+
+xc[2] = 0.0
+@test exact_equal(xc, SparseVector(8, Int[], Float64[]))
+
+
 # sprand
 
 xr = sprand(1000, 0.3)

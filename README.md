@@ -64,7 +64,7 @@ SparseVector(n, src)   # construct a sparse vector of length n, with entries fro
 ## Random Construction
 sprand(n, p)       # construct a random sparse vector with length n and density p
                    # the non-zero values are generated using rand(nnz)
-                   
+
 sprand(n, p, T)    # construct a random sparse vector of element type T
                    # the non-zero values are generated using rand(T, nnz)
 
@@ -87,6 +87,8 @@ copy(x)      # return a copy of x, of type SparseVector{Tv,Ti}
 vec(x)       # return x itself (because `x` itself is a vector)
 
 x[i]         # get the i-th element of x
+
+x[i] = v     # set the i-th element of x to v
 
 
 ## Conversion

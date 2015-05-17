@@ -58,6 +58,32 @@ end
 Base.getindex(x::GenericSparseVector, i::Integer) = x[convert(Int, i)]
 
 
+function Base.setindex!{Tv,Ti<:Integer}(x::SparseVector{Tv,Ti}, v::Tv, i::Ti)
+    nzind = x.nzind
+    nzval = x.nzval
+
+    m = length(nzind)
+    k = searchsortedfirst(nzind, i)
+    if 1 <= k <= m && nzind[k] == i  # i found
+        if v == zero(v)
+            deleteat!(nzind, k)
+            deleteat!(nzval, k)
+        else
+            nzval[k] = v
+        end
+    else  # i not found
+        if v != zero(v)
+            insert!(nzind, k, i)
+            insert!(nzval, k, v)
+        end
+    end
+    x
+end
+
+Base.setindex!{Tv, Ti<:Integer}(x::SparseVector{Tv,Ti}, v, i::Integer) =
+    setindex!(x, convert(Tv, v), convert(Ti, i))
+
+
 ### Conversion
 
 # convert SparseMatrixCSC to SparseVector
