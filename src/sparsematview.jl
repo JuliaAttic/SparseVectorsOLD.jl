@@ -21,6 +21,8 @@ SparseMatrixCSCView{Tv,Ti<:Integer}(m::Integer, n::Integer, colptr::Vector{Ti}, 
     SparseMatrixCSCView{Tv,Ti}(m, n, colptr, rowval, nzval)
 
 
+typealias GenericSparseMatrixCSC{Tv,Ti} Union(SparseMatrixCSC{Tv,Ti},SparseMatrixCSCView{Tv,Ti})
+
 ### Basic properties
 
 Base.length(x::SparseMatrixCSCView) = x.m * x.n
@@ -49,7 +51,7 @@ Base.getindex(x::SparseMatrixCSCView, i::Integer, j::Integer) = x[convert(Int, i
 
 view(x::SparseMatrixCSC) = SparseMatrixCSCView(x.m, x.n, x.colptr, view(x.rowval), view(x.nzval))
 
-function view(x::Union(SparseMatrixCSC,SparseMatrixCSCView), ::Colon, j::Integer)
+function view(x::GenericSparseMatrixCSC, ::Colon, j::Integer)
     1 <= j <= x.n || throw(BoundsError())
     r1 = convert(Int, x.colptr[j])
     r2 = convert(Int, x.colptr[j+1]) - 1
@@ -57,7 +59,7 @@ function view(x::Union(SparseMatrixCSC,SparseMatrixCSCView), ::Colon, j::Integer
     SparseVectorView(x.m, view(x.rowval, rgn), view(x.nzval, rgn))
 end
 
-function view(x::Union(SparseMatrixCSC,SparseMatrixCSCView), ::Colon, J::UnitRange)
+function view(x::GenericSparseMatrixCSC, ::Colon, J::UnitRange)
     jfirst = first(J)
     jlast = last(J)
     (1 <= jfirst <= x.n && jlast <= x.n) || throw(BoundsError())
