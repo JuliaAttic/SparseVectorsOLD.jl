@@ -6,4 +6,11 @@ A Julia package to support sparse vectors.
 
 ## Overview
 
-Sparse data has become increasingly common in machine learning and related areas. However, the support of sparse data in Julia base remains quite limited (*e.g.* it does not provide 1D sparse vectors and views of sparse matrices). The primary purpose of this package is to mitigate this situation by providing *sparse vectors*, *sparse views*, and additional functions to construct and manipulate sparse data structures.
+Sparse data has become increasingly common in machine learning and related areas. For example, in document analysis, each document is often represented as a *sparse vector*, which each entry represents the number of occurrences of a certain word. However, the support of sparse vectors remains quite limited in Julia base.
+
+This package provides two types ``SparseVector`` and ``SparseVectorView`` and a series of methods to work with *sparse vectors*. Specifically, this package provides the following functionalities:
+
+- Construction of sparse vectors
+- Get a view of a column in a sparse matrix (of CSC format), or a view of a range of columns.
+- Specialized arithmetic functions on sparse vectors, *e.g.* ``+``, ``-``, ``*``, etc.
+- Specialized reduction functions on sparse vectors, *e.g.* ``sum``, ``vecnorm``, etc.
