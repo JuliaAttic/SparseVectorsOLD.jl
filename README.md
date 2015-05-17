@@ -14,3 +14,109 @@ This package provides two types ``SparseVector`` and ``SparseVectorView`` and a 
 - Get a view of a column in a sparse matrix (of CSC format), or a view of a range of columns.
 - Specialized arithmetic functions on sparse vectors, *e.g.* ``+``, ``-``, ``*``, etc.
 - Specialized reduction functions on sparse vectors, *e.g.* ``sum``, ``vecnorm``, etc.
+
+
+## Types
+
+This package defines two types.
+
+- ``SparseVector``: a sparse vector that owns its memory
+- ``SparseVectorView``: a view of external data as a sparse vector.
+
+The formal definition of these types are listed below:
+
+```julia
+immutable SparseVector{Tv,Ti<:Integer} <: AbstractSparseVector{Tv,Ti}
+    n::Int              # the number of elements
+    nzind::Vector{Ti}   # the indices of nonzeros
+    nzval::Vector{Tv}   # the values of nonzeros
+end
+
+typealias CVecView{T} ContiguousView{T,1,Vector{T}}
+
+immutable SparseVectorView{Tv,Ti<:Integer} <: AbstractSparseVector{Tv,Ti}
+    n::Int                  # the number of elements
+    nzind::CVecView{Ti}     # the indices of nonzeros
+    nzval::CVecView{Tv}     # the values of nonzeros
+end
+
+typealias GenericSparseVector{Tv,Ti} Union(SparseVector{Tv,Ti}, SparseVectorView{Tv,Ti})
+```
+
+## Methods
+
+In addition to the methods for all subtypes of ``AbstractVector`` (*e.g.* ``length``, ``size``, ``ndims``, ``eltype``, ``isempty``, etc), this package provides specialized implementation of the following methods for both ``SparseVector`` and ``SparseVectorView``:
+
+```julia
+## Construction
+SparseVector(n, nzind, nzval)  # constructs an instance by providing all fields
+
+SparseVector(n, src)   # construct a sparse vector of length n, with entries from src
+                       # src can be either of the following:
+                       # - an index to value map
+                       # - a sequence of (index, value) tuple
+
+## Basics
+nnz(x)       # the number of stored entries
+countnz(x)   # count the actual number of nonzero entries
+nonzeros(x)  # a vector of stored entries (i.e. x.nzval)
+
+full(x)      # construct a full vector, of type Vector{Tv}
+
+copy(x)      # return a copy of x, of type SparseVector{Tv,Ti}
+
+vec(x)       # return x itself (because `x` itself is a vector)
+
+x[i]         # get the i-th element of x
+
+
+## Conversion
+convert(SparseVector, s)  # convert s to an instance of SparseVector
+                          # typeof(s) can be Vector or SparseMatrixCSC
+
+## Element-wise Computation
+scale!(x, c)   # x <- x * c, where c is a scalar
+scale!(c, x)   # i.e. scale!(x, c)
+scale(x, c)    # returns x * c
+scale(c, x)    # i.e. scale(x, c)
+
+x * c, x .* c  # multiple x and a scalar c
+c * x, c .* x  # i.e. x * c
+
+x + y, x .+ y  # add x and y, x and y can be either dense or sparse
+x - y, x .- y  # subtract y from x, x and y can be either dense or sparse
+
+axpy!(a, x, y)  # y <- y + a * x
+                # a: a scalar number
+                # x: a sparse vector
+                # y: a dense vector
+                # This operation is very common in machine learning context
+
+## Reduction
+sum(x)      # Compute the sum of elements
+sumabs(x)   # Compute the sum of absolute values
+sumabs2(x)  # Compute the sum of squared absolute values
+
+vecnorm(x, p=2)  # Compute the p-th order vector-norm
+
+dot(x, y)   # Compute the dot product between x and y
+            # x and y can be either dense or sparse vectors
+```
+
+## Views
+
+The package provides methods to obtain views of sparse vectors
+
+```julia
+view(x)   # construct a SparseVectorView instance as a view of x
+          # where x is an instance of SparseVector
+
+view(A, :, i)   # construct a view of the i-th column of X
+                # where X is an instance of SparseMatrixCSC
+                # returns a instance of SparseVectorView
+
+unsafe_colrange(A, i1:i2)  # construct an unsafe view of A[:,i1:i2]
+                           # returns an instance of SparseMatrixCSC
+```
+
+**Note:** `unsafe_colrange` uses pointer_to_array to obtain the internal vectors, and therefore the returned array should only be used within the local scope.
