@@ -112,3 +112,38 @@ for X in Any[S, Sv]
     s3 = sum(X, 3)
     @test s3 == Sf
 end
+
+# matrix-vector multiplication
+
+x = randn(8)
+@test_approx_eq Sv * x Sf * x
+
+x = randn(8)
+y = zeros(4)
+A_mul_B!(y, Sv, x)
+@test_approx_eq y Sf * x
+
+x = randn(4)
+@test_approx_eq At_mul_B(Sv, x) Sf'x
+
+x = randn(4)
+y = zeros(8)
+At_mul_B!(y, Sv, x)
+@test_approx_eq y Sf'x
+
+# matrix-matrix multiplication
+
+X = randn(8, 3)
+@test_approx_eq Sv * X Sf * X
+
+X = sprand(8, 3, 0.5)
+@test isa(Sv * X, SparseMatrixCSC)
+@test_approx_eq Sv * X S * X
+
+Xv = view(X)
+@test isa(Sv * Xv, SparseMatrixCSC)
+@test_approx_eq Sv * Xv S * X
+
+X = sprand(3, 4, 0.5)
+@test isa(X * Sv, SparseMatrixCSC)
+@test_approx_eq X * Sv X * S

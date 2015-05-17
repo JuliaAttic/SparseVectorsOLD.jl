@@ -149,3 +149,29 @@ end
 
 Base.sum(x::SparseMatrixCSC, dim::Integer) = _sum(x, dim)
 Base.sum(x::SparseMatrixCSCView, dim::Integer) = _sum(x, dim)
+
+
+### Matrix multiplication (for SparseMatrixCSCView)
+
+Base.A_mul_B!(α::Number, A::SparseMatrixCSCView, x::AbstractVector, β::Number, y::AbstractVector) =
+    A_mul_B!(α, as_sparsemat(A), x, β, y)
+
+Base.A_mul_B!(y::AbstractVector, A::SparseMatrixCSCView, x::AbstractVector) =
+    A_mul_B!(one(eltype(x)), A, x, zero(eltype(y)), y)
+
+Base.At_mul_B!(α::Number, A::SparseMatrixCSCView, x::AbstractVector, β::Number, y::AbstractVector) =
+    At_mul_B!(α, as_sparsemat(A), x, β, y)
+
+Base.At_mul_B!(y::AbstractVector, A::SparseMatrixCSCView, x::AbstractVector) =
+    At_mul_B!(one(eltype(x)), A, x, zero(eltype(y)), y)
+
+* (A::SparseMatrixCSCView, x::AbstractVector) = as_sparsemat(A) * x
+
+* (X::StridedMatrix, A::SparseMatrixCSCView) = X * as_sparsemat(A)
+* (A::SparseMatrixCSCView, X::StridedMatrix) = as_sparsemat(A) * X
+
+* (A::SparseMatrixCSC, B::SparseMatrixCSCView) = A * as_sparsemat(B)
+* (A::SparseMatrixCSCView, B::SparseMatrixCSC) = as_sparsemat(A) * B
+* (A::SparseMatrixCSCView, B::SparseMatrixCSCView) = as_sparsemat(A) * as_sparsemat(B)
+
+Base.At_mul_B(A::SparseMatrixCSCView, x::AbstractVector) = At_mul_B(as_sparsemat(A), x)
