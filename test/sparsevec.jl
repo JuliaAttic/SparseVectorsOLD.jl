@@ -27,6 +27,7 @@ x = SparseVector(8, [2, 5, 6], [1.25, -0.75, 3.5])
 @test nnz(x) == 3
 @test nonzeros(x) == [1.25, -0.75, 3.5]
 
+show(x)
 
 # view
 

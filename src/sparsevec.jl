@@ -134,6 +134,41 @@ SparseVector{Tv,Ti}(n::Integer, s::AbstractVector{@compat(Tuple{Ti,Tv})}) =
 
 view(x::SparseVector) = SparseVectorView(length(x), view(x.nzind), view(x.nzval))
 
+
+### Show
+
+function Base.showarray(io::IO, x::GenericSparseVector;
+                        header::Bool=true, limit::Bool=Base._limit_output,
+                        rows = Base.tty_size()[1], repr=false)
+    if header
+        print(io, "Sparse vector, length = ", x.n,
+            ", with ", nnz(x), " ", eltype(x), " entries:", "\n")
+    end
+
+    if limit
+        half_screen_rows = div(rows - 8, 2)
+    else
+        half_screen_rows = typemax(Int)
+    end
+    pad = ndigits(x.n)
+    k = 0
+
+    for k = 1:length(x.nzind)
+        if k < half_screen_rows || k > nnz(x)-half_screen_rows
+            print(io, "\t", '[', rpad(x.nzind[k], pad), "]  =  ")
+            showcompact(io, x.nzval[k])
+            print(io, "\n")
+        elseif k == half_screen_rows
+            print(io, sep, '\u22ee')
+        end
+        k += 1
+    end
+end
+
+Base.show(io::IO, x::GenericSparseVector) = Base.showarray(io, x)
+Base.writemime(io::IO, ::MIME"text/plain", x::GenericSparseVector) = show(io, x)
+
+
 ### Array manipulation
 
 function Base.full{Tv}(x::GenericSparseVector{Tv})
