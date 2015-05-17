@@ -61,6 +61,20 @@ SparseVector(n, src)   # construct a sparse vector of length n, with entries fro
                        # - an index to value map
                        # - a sequence of (index, value) tuple
 
+## Random Construction
+sprand(n, p)       # construct a random sparse vector with length n and density p
+                   # the non-zero values are generated using rand(nnz)
+                   
+sprand(n, p, T)    # construct a random sparse vector of element type T
+                   # the non-zero values are generated using rand(T, nnz)
+
+sprandn(n, p)      # construct a random sparse vector,
+                   # where values follow standard Normal distribution
+
+sprand(n, p, rfn)  # construct a random sparse vector,
+                   # where the non-zero values are generated using rfn
+
+
 ## Basics
 nnz(x)       # the number of stored entries
 countnz(x)   # count the actual number of nonzero entries

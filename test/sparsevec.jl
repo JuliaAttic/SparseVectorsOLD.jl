@@ -114,7 +114,6 @@ xc = convert(SparseVector{Float32}, x)
 @test isa(xc, SparseVector{Float32,Int})
 @test exact_equal(x, xc)
 
-
 # copy
 
 xc = copy(x)
@@ -128,6 +127,23 @@ xc = copy(x)
 for i = 1:length(x)
     @test x[i] == xf[i]
 end
+
+# sprand
+
+xr = sprand(1000, 0.3)
+@test isa(xr, SparseVector{Float64,Int})
+@test length(xr) == 1000
+@test all(nonzeros(xr) .>= 0.0)
+
+xr = sprand(1000, 0.3, Float32)
+@test isa(xr, SparseVector{Float32,Int})
+@test length(xr) == 1000
+@test all(nonzeros(xr) .>= 0.0)
+
+xr = sprandn(1000, 0.3)
+@test isa(xr, SparseVector{Float64,Int})
+@test length(xr) == 1000
+@test any(nonzeros(xr) .> 0.0) && any(nonzeros(xr) .< 0.0)
 
 # scale
 

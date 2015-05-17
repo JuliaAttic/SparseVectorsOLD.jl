@@ -144,6 +144,26 @@ SparseVector{Tv,Ti}(n::Integer, s::AbstractVector{@compat(Tuple{Ti,Tv})}) =
     _make_sparsevec(Tv, Ti, n, s, true)
 
 
+# sprand
+
+function Base.sprand{T}(n::Integer, p::FloatingPoint, rfn::Function, ::Type{T})
+    I = randsubseq(1:convert(Int, n), p)
+    V = rfn(T, length(I))
+    SparseVector(n, I, V)
+end
+
+function Base.sprand(n::Integer, p::FloatingPoint, rfn::Function)
+    I = randsubseq(1:convert(Int, n), p)
+    V = rfn(length(I))
+    SparseVector(n, I, V)
+end
+
+Base.sprand{T}(n::Integer, p::FloatingPoint, ::Type{T}) = sprand(n, p, rand, T)
+Base.sprand(n::Integer, p::FloatingPoint) = sprand(n, p, rand)
+
+Base.sprandn(n::Integer, p::FloatingPoint) = sprand(n, p, randn)
+
+
 ### View
 
 view(x::SparseVector) = SparseVectorView(length(x), view(x.nzind), view(x.nzval))
