@@ -29,6 +29,21 @@ x = SparseVector(8, [2, 5, 6], [1.25, -0.75, 3.5])
 
 show(x)
 
+x0 = SparseVector(8)
+@test isa(x0, SparseVector{Float64,Int})
+@test length(x0) == 8
+@test nnz(x0) == 0
+
+x0 = SparseVector(Float32, 8)
+@test isa(x0, SparseVector{Float32,Int})
+@test length(x0) == 8
+@test nnz(x0) == 0
+
+x0 = SparseVector(Float32, Int32, 8)
+@test isa(x0, SparseVector{Float32, Int32})
+@test length(x0) == 8
+@test nnz(x0) == 0
+
 # view
 
 _x2 = SparseVector(8, [1, 2, 6, 7], [3.25, 4.0, -5.5, -6.0])

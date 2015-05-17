@@ -103,6 +103,12 @@ Base.convert{Tv,TvS,TiS}(::Type{SparseVector{Tv}}, s::SparseVector{TvS,TiS}) =
     SparseVector{Tv,TiS}(s.n, s.nzind, convert(Vector{Tv}, s.nzval))
 
 
+### Construction
+
+SparseVector(n::Integer) = SparseVector(n, Int[], Float64[])
+SparseVector{Tv}(::Type{Tv}, n::Integer) = SparseVector(n, Int[], Tv[])
+SparseVector{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer) = SparseVector(n, Ti[], Tv[])
+
 # make SparseVector from an iterable collection of (ind, value), e.g. dictionary
 function _make_sparsevec{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer, iter, checkrep::Bool)
     m = length(iter)

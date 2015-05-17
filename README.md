@@ -51,6 +51,11 @@ In addition to the methods for all subtypes of ``AbstractVector`` (*e.g.* ``leng
 ## Construction
 SparseVector(n, nzind, nzval)  # constructs an instance by providing all fields
 
+SparseVector(n)          # construct a zero sparse vector of length n, Tv == Float64
+SparseVector(Tv, n)      # construct a zero sparse vector of length n, with element type Tv
+SparseVector(Tv, Ti, n)  # construct a zero sparse vector of length n,
+                         # with element type Tv, and index type Ti
+
 SparseVector(n, src)   # construct a sparse vector of length n, with entries from src
                        # src can be either of the following:
                        # - an index to value map
