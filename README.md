@@ -115,8 +115,9 @@ view(A, :, i)   # construct a view of the i-th column of X
                 # where X is an instance of SparseMatrixCSC
                 # returns a instance of SparseVectorView
 
-unsafe_colrange(A, i1:i2)  # construct an unsafe view of A[:,i1:i2]
+unsafe_colrange(A, i1:i2)  # construct an unsafe view of a range of columns
+                           # i.e. from the i1-th to i2-th column.
                            # returns an instance of SparseMatrixCSC
 ```
 
-**Note:** `unsafe_colrange` uses pointer_to_array to obtain the internal vectors, and therefore the returned array should only be used within the local scope.
+**Note:** `unsafe_colrange` uses ``pointer_to_array`` to obtain the internal vectors, and therefore the returned array should only be used within the local scope.
