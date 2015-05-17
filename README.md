@@ -72,7 +72,14 @@ x[i]         # get the i-th element of x
 
 ## Conversion
 convert(SparseVector, s)  # convert s to an instance of SparseVector
-                          # typeof(s) can be Vector or SparseMatrixCSC
+                          # s can be an instance of Vector or SparseMatrixCSC
+
+convert(SparseVector{Tv}, s)  # convert the element-type of s to Tv
+                              # where s is an instance of SparseVector
+
+convert(SparseVector{Tv, Ti}, s)  # convert the element-type of s to Tv,
+                                  # and the index-type of s to Ti,
+                                  # where s is an instance of SparseVector
 
 ## Element-wise Computation
 scale!(x, c)   # x <- x * c, where c is a scalar

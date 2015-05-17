@@ -91,6 +91,15 @@ xc = SparseVector(8, ps)
 @test isa(xc, SparseVector{Float64,Int})
 @test exact_equal(x, xc)
 
+xc = convert(SparseVector{Float32,Int}, x)
+@test isa(xc, SparseVector{Float32,Int})
+@test exact_equal(x, xc)
+
+xc = convert(SparseVector{Float32}, x)
+@test isa(xc, SparseVector{Float32,Int})
+@test exact_equal(x, xc)
+
+
 # copy
 
 xc = copy(x)
