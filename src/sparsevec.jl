@@ -169,8 +169,23 @@ Base.scale(a::Number, x::GenericSparseVector) = scale(x, a)
 .* (a::Number, x::GenericSparseVector) = scale(x, a)
 
 
-function + {Tx,Ty}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
-    R = typeof(zero(Tx) + zero(Ty))
+abstract _BinOp
+
+type _AddOp <: _BinOp end
+
+_eval(::_AddOp, x, y) = x + y
+_eval1(::_AddOp, x) = x
+_eval2(::_AddOp, y) = y
+
+type _SubOp <: _BinOp end
+
+_eval(::_SubOp, x, y) = x - y
+_eval1(::_SubOp, x) = x
+_eval2(::_SubOp, y) = -y
+
+
+function _mapbinop{Tx,Ty}(op::_BinOp, x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
+    R = typeof(_eval(op, zero(Tx), zero(Ty)))
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
 
@@ -193,7 +208,7 @@ function + {Tx,Ty}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
         jy = ynzind[iy]
 
         if jx == jy
-            v = xnzval[ix] + ynzval[iy]
+            v = _eval(op, xnzval[ix], ynzval[iy])
             if v != zero(v)
                 push!(rind, jx)
                 push!(rval, v)
@@ -202,91 +217,35 @@ function + {Tx,Ty}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
             iy += 1
         elseif jx < jy
             push!(rind, jx)
-            push!(rval, xnzval[ix])
+            push!(rval, _eval1(op, xnzval[ix]))
             ix += 1
         else
             push!(rind, jy)
-            push!(rval, ynzval[iy])
+            push!(rval, _eval2(op, ynzval[iy]))
             iy += 1
         end
     end
 
     @inbounds while ix <= mx
         push!(rind, xnzind[ix])
-        push!(rval, xnzval[ix])
+        push!(rval, _eval1(op, xnzval[ix]))
         ix += 1
     end
 
     @inbounds while iy <= my
         push!(rind, ynzind[iy])
-        push!(rval, ynzval[iy])
+        push!(rval, _eval2(op, ynzval[iy]))
         iy += 1
     end
 
     return SparseVector(n, rind, rval)
 end
 
-function - {Tx,Ty}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
-    R = typeof(zero(Tx) - zero(Ty))
-    n = length(x)
-    length(y) == n || throw(DimensionMismatch())
-
-    xnzind = x.nzind
-    xnzval = x.nzval
-    ynzind = y.nzind
-    ynzval = y.nzval
-    mx = length(xnzind)
-    my = length(ynzind)
-
-    ix = 1
-    iy = 1
-    rind = Array(Int, 0)
-    rval = Array(R, 0)
-    sizehint!(rind, mx + my)
-    sizehint!(rval, mx + my)
-
-    @inbounds while ix <= mx && iy <= my
-        jx = xnzind[ix]
-        jy = ynzind[iy]
-
-        if jx == jy
-            v = xnzval[ix] - ynzval[iy]
-            if v != zero(v)
-                push!(rind, jx)
-                push!(rval, v)
-            end
-            ix += 1
-            iy += 1
-        elseif jx < jy
-            push!(rind, jx)
-            push!(rval, xnzval[ix])
-            ix += 1
-        else
-            push!(rind, jy)
-            push!(rval, -ynzval[iy])
-            iy += 1
-        end
-    end
-
-    @inbounds while ix <= mx
-        push!(rind, xnzind[ix])
-        push!(rval, xnzval[ix])
-        ix += 1
-    end
-
-    @inbounds while iy <= my
-        push!(rind, ynzind[iy])
-        push!(rval, -ynzval[iy])
-        iy += 1
-    end
-
-    return SparseVector(n, rind, rval)
-end
-
++ (x::GenericSparseVector, y::GenericSparseVector) = _mapbinop(_AddOp(), x, y)
+- (x::GenericSparseVector, y::GenericSparseVector) = _mapbinop(_SubOp(), x, y)
 
 .+ (x::GenericSparseVector, y::GenericSparseVector) = (x + y)
 .- (x::GenericSparseVector, y::GenericSparseVector) = (x - y)
-
 
 function Base.LinAlg.axpy!(a::Number, x::GenericSparseVector, y::StridedVector)
     length(x) == length(y) || throw(DimensionMismatch())

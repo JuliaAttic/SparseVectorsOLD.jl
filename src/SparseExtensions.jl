@@ -3,7 +3,7 @@ module SparseExtensions
 using ArrayViews
 using Compat
 
-import Base: +, .+, *, .*
+import Base: +, .+, -, .-, *, .*
 import ArrayViews: view
 
 export
@@ -15,7 +15,7 @@ export
     SparseVector, SparseVectorView,
 
     # sparsematview
-    SparseMatrixCSCView
+    unsafe_colrange
 
 
 # sources
