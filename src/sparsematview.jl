@@ -91,3 +91,12 @@ end
 
 Base.copy{Tv,Ti<:Integer}(x::SparseMatrixCSCView{Tv,Ti}) =
     SparseMatrixCSC{Tv,Ti}(size(x,1), size(x,2), x.colptr, copy(x.rowval), copy(x.nzval))
+
+
+### sum
+
+Base.sum(x::GenericSparseMatrixCSC) = sum(x.nzval)
+Base.sumabs(x::GenericSparseMatrixCSC) = sumabs(x.nzval)
+Base.sumabs2(x::GenericSparseMatrixCSC) = sumabs2(x.nzval)
+
+Base.vecnorm(x::SparseMatrixCSCView, p::Real=2) = vecnorm(x.nzval, p)

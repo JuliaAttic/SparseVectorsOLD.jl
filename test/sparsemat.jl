@@ -4,6 +4,7 @@ using SparseExtensions
 
 S = sprand(4, 8, 0.5)
 Sf = full(S)
+@assert isa(Sf, Matrix{Float64})
 Sv = view(S)
 
 @test isa(Sv, SparseMatrixCSCView{Float64,Int})
@@ -70,4 +71,13 @@ for X in Any[S, Sv]
     @test isa(V0, SparseMatrixCSCView{Float64,Int})
     @test size(V0) == (4, 0)
     @test isempty(V0)
+end
+
+
+# sum & vecnorm
+
+for X in Any[S, Sv]
+    @test_approx_eq sum(X) sum(Sf)
+    @test_approx_eq sumabs(X) sumabs(Sf)
+    @test_approx_eq sumabs2(X) sumabs2(Sf)
 end
