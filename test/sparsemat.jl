@@ -28,6 +28,14 @@ for j = 1:size(Sv,2), i = 1:size(Sv,1)
 end
 
 
+# as_sparsemat
+
+S_a = SparseExtensions.as_sparsemat(Sv)
+@test isa(S_a, SparseMatrixCSC{Float64,Int})
+@test size(S_a) == size(S)
+@test full(S_a) == full(S)
+
+
 # full
 
 @test full(Sv) == Sf

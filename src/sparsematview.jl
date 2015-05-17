@@ -71,6 +71,13 @@ function view(x::GenericSparseMatrixCSC, ::Colon, J::UnitRange)
         view(x.rowval, rgn), view(x.nzval, rgn))
 end
 
+# internal function, wrap SparseMatrixCSCView as SparseMatrixCSC (without copying)
+# the results should only be used within a local scope!!
+as_sparsemat{Tv,Ti<:Integer}(x::SparseMatrixCSCView{Tv,Ti}) =
+    SparseMatrixCSC{Tv,Ti}(x.m, x.n, x.colptr, as_jvec(x.rowval), as_jvec(x.nzval))
+
+as_jvec{T}(x::ContiguousView{T,1,Vector{T}}) = pointer_to_array(pointer(x), length(x), false)
+
 
 ### Array manipulation
 
@@ -90,7 +97,7 @@ function Base.full{Tv}(x::SparseMatrixCSCView{Tv})
 end
 
 Base.copy{Tv,Ti<:Integer}(x::SparseMatrixCSCView{Tv,Ti}) =
-    SparseMatrixCSC{Tv,Ti}(size(x,1), size(x,2), x.colptr, copy(x.rowval), copy(x.nzval))
+    SparseMatrixCSC{Tv,Ti}(x.m, x.n, x.colptr, copy(x.rowval), copy(x.nzval))
 
 
 ### sum
