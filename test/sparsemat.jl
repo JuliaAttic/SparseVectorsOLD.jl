@@ -80,4 +80,27 @@ for X in Any[S, Sv]
     @test_approx_eq sum(X) sum(Sf)
     @test_approx_eq sumabs(X) sumabs(Sf)
     @test_approx_eq sumabs2(X) sumabs2(Sf)
+
+    @test_approx_eq vecnorm(X) vecnorm(Sf)
+    @test_approx_eq vecnorm(X, 1) vecnorm(Sf, 1)
+    @test_approx_eq vecnorm(X, 2) vecnorm(Sf, 2)
+    @test_approx_eq vecnorm(X, 3) vecnorm(Sf, 3)
+    @test_approx_eq vecnorm(X, Inf) vecnorm(Sf, Inf)
+end
+
+# sum along dimensions
+
+for X in Any[S, Sv]
+    s1 = sum(X, 1)
+    @test isa(s1, Matrix{Float64})
+    @test size(s1) == (1, size(X,2))
+    @test_approx_eq s1 sum(Sf, 1)
+
+    s2 = sum(X, 2)
+    @test isa(s2, Matrix{Float64})
+    @test size(s2) == (size(X,1), 1)
+    @test_approx_eq s2 sum(Sf, 2)
+
+    s3 = sum(X, 3)
+    @test s3 == Sf
 end

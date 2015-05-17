@@ -100,3 +100,42 @@ Base.sumabs(x::GenericSparseMatrixCSC) = sumabs(x.nzval)
 Base.sumabs2(x::GenericSparseMatrixCSC) = sumabs2(x.nzval)
 
 Base.vecnorm(x::SparseMatrixCSCView, p::Real=2) = vecnorm(x.nzval, p)
+
+
+### sum along dimensions
+
+function Base.sum{Tv}(x::GenericSparseMatrixCSC{Tv}, dim::Integer)
+    m, n = size(x)
+    Td = typeof(zero(Tv) + zero(Tv))
+    if 1 <= dim <= 2
+        dsiz = dim == 1 ? (1, n) : (m, 1)
+        dst = zeros(Td, dsiz)
+        if dim == 1
+            nzval = x.nzval
+            for j = 1:n
+                r1 = convert(Int, x.colptr[j])
+                r2 = convert(Int, x.colptr[j+1]) - 1
+                s = zero(Td)
+                @inbounds for i = r1:r2
+                    s += nzval[i]
+                end
+                dst[j] = s
+            end
+        else  # dim == 2
+            rowind = x.rowval
+            nzval = x.nzval
+            for j = 1:n
+                r1 = convert(Int, x.colptr[j])
+                r2 = convert(Int, x.colptr[j+1]) - 1
+                for i = r1:r2
+                    @inbounds v = nzval[i]
+                    @inbounds ii = rowind[i]
+                    dst[ii] += v
+                end
+            end
+        end
+        dst
+    else
+        convert(Matrix{Td}, full(x))
+    end::Matrix{Td}
+end
