@@ -131,6 +131,10 @@ xb = SparseVector(8, [1,2,5,6,7], [-3.25,-2.75,-0.75,9.0,6.0])
 @test exact_equal(x - x, SparseVector(8, Int[], Float64[]))
 @test exact_equal(x - x2, xb)
 
+@test full(x) + x2 == full(xa)
+@test full(x) - x2 == full(xb)
+@test x + full(x2) == full(xa)
+@test x - full(x2) == full(xb)
 
 # axpy
 

@@ -241,11 +241,81 @@ function _mapbinop{Tx,Ty}(op::_BinOp, x::GenericSparseVector{Tx}, y::GenericSpar
     return SparseVector(n, rind, rval)
 end
 
+function _mapbinop{Tx,Ty}(op::_BinOp, x::StridedVector{Tx}, y::GenericSparseVector{Ty})
+    R = typeof(_eval(op, zero(Tx), zero(Ty)))
+    n = length(x)
+    length(y) == n || throw(DimensionMismatch())
+
+    ynzind = y.nzind
+    ynzval = y.nzval
+    m = length(ynzind)
+
+    dst = Array(R, n)
+    ii = 1
+    @inbounds for i = 1:m
+        j = ynzind[i]
+        while ii < j
+            dst[ii] = _eval1(op, x[ii])
+            ii += 1
+        end
+        # at this point: ii == j
+        dst[j] = _eval(op, x[j], ynzval[i])
+        ii += 1
+    end
+
+    @inbounds while ii <= n
+        dst[ii] = _eval1(op, x[ii])
+        ii += 1
+    end
+    return dst
+end
+
+function _mapbinop{Tx,Ty}(op::_BinOp, x::GenericSparseVector{Tx}, y::StridedVector{Ty})
+    R = typeof(_eval(op, zero(Tx), zero(Ty)))
+    n = length(x)
+    length(y) == n || throw(DimensionMismatch())
+
+    xnzind = x.nzind
+    xnzval = x.nzval
+    m = length(xnzind)
+
+    dst = Array(R, n)
+    ii = 1
+    @inbounds for i = 1:m
+        j = xnzind[i]
+        while ii < j
+            dst[ii] = _eval2(op, y[ii])
+            ii += 1
+        end
+        # at this point: ii == j
+        dst[j] = _eval(op, xnzval[i], y[j])
+        ii += 1
+    end
+
+    @inbounds while ii <= n
+        dst[ii] = _eval2(op, y[ii])
+        ii += 1
+    end
+    return dst
+end
+
+
 + (x::GenericSparseVector, y::GenericSparseVector) = _mapbinop(_AddOp(), x, y)
 - (x::GenericSparseVector, y::GenericSparseVector) = _mapbinop(_SubOp(), x, y)
++ (x::StridedVector, y::GenericSparseVector) = _mapbinop(_AddOp(), x, y)
+- (x::StridedVector, y::GenericSparseVector) = _mapbinop(_SubOp(), x, y)
++ (x::GenericSparseVector, y::StridedVector) = _mapbinop(_AddOp(), x, y)
+- (x::GenericSparseVector, y::StridedVector) = _mapbinop(_SubOp(), x, y)
 
 .+ (x::GenericSparseVector, y::GenericSparseVector) = (x + y)
 .- (x::GenericSparseVector, y::GenericSparseVector) = (x - y)
+
+.+ (x::StridedVector, y::GenericSparseVector) = (x + y)
+.- (x::StridedVector, y::GenericSparseVector) = (x - y)
+
+.+ (x::GenericSparseVector, y::StridedVector) = (x + y)
+.- (x::GenericSparseVector, y::StridedVector) = (x - y)
+
 
 function Base.LinAlg.axpy!(a::Number, x::GenericSparseVector, y::StridedVector)
     length(x) == length(y) || throw(DimensionMismatch())
