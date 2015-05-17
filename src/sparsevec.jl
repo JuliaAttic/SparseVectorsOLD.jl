@@ -188,7 +188,7 @@ function + {Tx,Ty}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
     sizehint!(rind, mx + my)
     sizehint!(rval, mx + my)
 
-    while ix <= mx && iy <= my
+    @inbounds while ix <= mx && iy <= my
         jx = xnzind[ix]
         jy = ynzind[iy]
 
@@ -211,13 +211,13 @@ function + {Tx,Ty}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
         end
     end
 
-    while ix <= mx
+    @inbounds while ix <= mx
         push!(rind, xnzind[ix])
         push!(rval, xnzval[ix])
         ix += 1
     end
 
-    while iy <= my
+    @inbounds while iy <= my
         push!(rind, ynzind[iy])
         push!(rval, ynzval[iy])
         iy += 1
@@ -226,7 +226,66 @@ function + {Tx,Ty}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
     return SparseVector(n, rind, rval)
 end
 
+function - {Tx,Ty}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
+    R = typeof(zero(Tx) - zero(Ty))
+    n = length(x)
+    length(y) == n || throw(DimensionMismatch())
+
+    xnzind = x.nzind
+    xnzval = x.nzval
+    ynzind = y.nzind
+    ynzval = y.nzval
+    mx = length(xnzind)
+    my = length(ynzind)
+
+    ix = 1
+    iy = 1
+    rind = Array(Int, 0)
+    rval = Array(R, 0)
+    sizehint!(rind, mx + my)
+    sizehint!(rval, mx + my)
+
+    @inbounds while ix <= mx && iy <= my
+        jx = xnzind[ix]
+        jy = ynzind[iy]
+
+        if jx == jy
+            v = xnzval[ix] - ynzval[iy]
+            if v != zero(v)
+                push!(rind, jx)
+                push!(rval, v)
+            end
+            ix += 1
+            iy += 1
+        elseif jx < jy
+            push!(rind, jx)
+            push!(rval, xnzval[ix])
+            ix += 1
+        else
+            push!(rind, jy)
+            push!(rval, -ynzval[iy])
+            iy += 1
+        end
+    end
+
+    @inbounds while ix <= mx
+        push!(rind, xnzind[ix])
+        push!(rval, xnzval[ix])
+        ix += 1
+    end
+
+    @inbounds while iy <= my
+        push!(rind, ynzind[iy])
+        push!(rval, -ynzval[iy])
+        iy += 1
+    end
+
+    return SparseVector(n, rind, rval)
+end
+
+
 .+ (x::GenericSparseVector, y::GenericSparseVector) = (x + y)
+.- (x::GenericSparseVector, y::GenericSparseVector) = (x - y)
 
 
 function Base.LinAlg.axpy!(a::Number, x::GenericSparseVector, y::StridedVector)
@@ -238,15 +297,21 @@ function Base.LinAlg.axpy!(a::Number, x::GenericSparseVector, y::StridedVector)
 
     if a == one(a)
         for i = 1:m
-            y[nzind[i]] += nzval[i]
+            @inbounds ii = nzind[i]
+            @inbounds v = nzval[i]
+            y[ii] += v
         end
     elseif a == -one(a)
         for i = 1:m
-            y[nzind[i]] -= nzval[i]
+            @inbounds ii = nzind[i]
+            @inbounds v = nzval[i]
+            y[ii] -= v
         end
     else
         for i = 1:m
-            y[nzind[i]] += a * nzval[i]
+            @inbounds ii = nzind[i]
+            @inbounds v = nzval[i]
+            y[ii] += a * v
         end
     end
     return y

@@ -119,12 +119,18 @@ xc = copy(x)
 @test is(scale!(xc, 2.5), xc)
 @test exact_equal(xc, sx)
 
-# add
+# plus and minus
 
 xa = SparseVector(8, [1,2,5,6,7], [3.25,5.25,-0.75,-2.0,-6.0])
 
 @test exact_equal(x + x, x * 2)
 @test exact_equal(x + x2, xa)
+
+xb = SparseVector(8, [1,2,5,6,7], [-3.25,-2.75,-0.75,9.0,6.0])
+
+@test exact_equal(x - x, SparseVector(8, Int[], Float64[]))
+@test exact_equal(x - x2, xb)
+
 
 # axpy
 
