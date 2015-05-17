@@ -93,6 +93,7 @@ xc = SparseVector(8, ps)
 # copy
 
 xc = copy(x)
+@test isa(xc, SparseVector{Float64,Int})
 @test !is(x.nzind, xc.nzval)
 @test !is(x.nzval, xc.nzval)
 @test exact_equal(x, xc)
