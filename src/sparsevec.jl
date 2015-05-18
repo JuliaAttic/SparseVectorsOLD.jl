@@ -255,6 +255,9 @@ Base.copy(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), copy(x.nzva
 
 ### Computation
 
+Base.abs(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), abs(x.nzval))
+Base.abs2(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), abs2(x.nzval))
+
 abstract _BinOp
 
 type _AddOp <: _BinOp end

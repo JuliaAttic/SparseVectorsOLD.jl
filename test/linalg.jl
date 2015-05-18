@@ -1,7 +1,6 @@
 using Base.Test
 using SparseVectors
 
-import Base.LinAlg: axpy!
 import SparseVectors: exact_equal
 
 ### BLAS Level-1

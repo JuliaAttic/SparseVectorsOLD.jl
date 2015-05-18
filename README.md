@@ -121,6 +121,9 @@ axpy!(a, x, y)  # y <- y + a * x
                 # y: a dense vector
                 # This operation is very common in machine learning context
 
+abs(x)          # element-wise map of abs, returns a SparseVector instance
+abs2(x)         # element-wise map of abs2, returns a SparseVector instance
+
 ## Reduction
 sum(x)      # Compute the sum of elements
 sumabs(x)   # Compute the sum of absolute values
@@ -141,7 +144,7 @@ A_mul_B!(a, A, x, b, y)   # y <- a * A * x + b * y
 
 At_mul_B(A, x)            # A' * x, without explicitly transposing A
 At_mul_B(y, A, x)         # y <- A' * x
-At_mul_B!(a, A, x, b, y)  # y <- a * A' * x + b * y            
+At_mul_B!(a, A, x, b, y)  # y <- a * A' * x + b * y
 ```
 
 
