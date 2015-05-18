@@ -47,6 +47,12 @@ Base.nnz(x::GenericSparseVector) = length(x.nzval)
 Base.countnz(x::GenericSparseVector) = countnz(x.nzval)
 Base.nonzeros(x::GenericSparseVector) = x.nzval
 
+# not exported, used mainly for testing
+function exact_equal(x::GenericSparseVector, y::GenericSparseVector)
+    x.n == y.n && x.nzind == y.nzind && x.nzval == y.nzval
+end
+
+
 ### Element access
 
 function Base.getindex{Tv}(x::GenericSparseVector{Tv}, i::Int)
@@ -249,21 +255,6 @@ Base.copy(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), copy(x.nzva
 
 ### Computation
 
-Base.scale!(x::GenericSparseVector, a::Number) = (scale!(x.nzval, a); x)
-
-Base.scale!(a::Number, x::GenericSparseVector) = scale!(x, a)
-
-Base.scale{T<:Number,S<:Number}(x::GenericSparseVector{T}, a::S) =
-    SparseVector(x.n, copy(x.nzind), scale(x.nzval, a))
-
-Base.scale(a::Number, x::GenericSparseVector) = scale(x, a)
-
-* (x::GenericSparseVector, a::Number) = scale(x, a)
-* (a::Number, x::GenericSparseVector) = scale(x, a)
-.* (x::GenericSparseVector, a::Number) = scale(x, a)
-.* (a::Number, x::GenericSparseVector) = scale(x, a)
-
-
 abstract _BinOp
 
 type _AddOp <: _BinOp end
@@ -412,83 +403,8 @@ end
 .- (x::GenericSparseVector, y::StridedVector) = (x - y)
 
 
-function Base.LinAlg.axpy!(a::Number, x::GenericSparseVector, y::StridedVector)
-    length(x) == length(y) || throw(DimensionMismatch())
-
-    nzind = x.nzind
-    nzval = x.nzval
-    m = length(nzind)
-
-    if a == one(a)
-        for i = 1:m
-            @inbounds ii = nzind[i]
-            @inbounds v = nzval[i]
-            y[ii] += v
-        end
-    elseif a == -one(a)
-        for i = 1:m
-            @inbounds ii = nzind[i]
-            @inbounds v = nzval[i]
-            y[ii] -= v
-        end
-    else
-        for i = 1:m
-            @inbounds ii = nzind[i]
-            @inbounds v = nzval[i]
-            y[ii] += a * v
-        end
-    end
-    return y
-end
-
-
 Base.sum(x::GenericSparseVector) = sum(x.nzval)
 Base.sumabs(x::GenericSparseVector) = sumabs(x.nzval)
 Base.sumabs2(x::GenericSparseVector) = sumabs2(x.nzval)
 
 Base.vecnorm(x::GenericSparseVector, p::Real=2) = vecnorm(x.nzval, p)
-
-
-function Base.dot{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::GenericSparseVector{Ty})
-    n = length(x)
-    length(y) == n || throw(DimensionMismatch())
-    nzind = y.nzind
-    nzval = y.nzval
-    s = zero(Tx) * zero(Ty)
-    for i = 1:length(nzind)
-        s += x[nzind[i]] * nzval[i]
-    end
-    return s
-end
-
-Base.dot{Tx<:Real,Ty<:Real}(x::GenericSparseVector{Tx}, y::StridedVector{Ty}) = dot(y, x)
-
-function Base.dot{Tx<:Real,Ty<:Real}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
-    n = length(x)
-    length(y) == n || throw(DimensionMismatch())
-
-    xnzind = x.nzind
-    xnzval = x.nzval
-    ynzind = y.nzind
-    ynzval = y.nzval
-    mx = length(xnzind)
-    my = length(ynzind)
-
-    ix = 1
-    iy = 1
-    s = zero(Tx) * zero(Ty)
-    while ix <= mx && iy <= my
-        jx = xnzind[ix]
-        jy = ynzind[iy]
-        if jx == jy
-            s += xnzval[ix] * ynzval[iy]
-            ix += 1
-            iy += 1
-        elseif jx < jy
-            ix += 1
-        else
-            iy += 1
-        end
-    end
-    return s
-end

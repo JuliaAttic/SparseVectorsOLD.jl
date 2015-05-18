@@ -21,6 +21,6 @@ export
 # sources
 include("sparsevec.jl")
 include("sparsematview.jl")
-
+include("linalg.jl")
 
 end # module

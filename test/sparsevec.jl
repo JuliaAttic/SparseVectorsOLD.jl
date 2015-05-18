@@ -1,15 +1,7 @@
 using Base.Test
 using SparseVectors
 
-import SparseVectors: GenericSparseVector
-import Base.LinAlg: axpy!
-
-# auxiliary tools
-
-function exact_equal(x::GenericSparseVector, y::GenericSparseVector)
-    x.n == y.n && x.nzind == y.nzind && x.nzval == y.nzval
-end
-
+import SparseVectors: GenericSparseVector, exact_equal
 
 # construction
 
@@ -176,21 +168,6 @@ xr = sprandn(1000, 0.3)
 @test length(xr) == 1000
 @test any(nonzeros(xr) .> 0.0) && any(nonzeros(xr) .< 0.0)
 
-# scale
-
-sx = SparseVector(x.n, x.nzind, x.nzval * 2.5)
-
-@test exact_equal(scale(x, 2.5), sx)
-@test exact_equal(scale(2.5, x), sx)
-@test exact_equal(x * 2.5, sx)
-@test exact_equal(2.5 * x, sx)
-@test exact_equal(x .* 2.5, sx)
-@test exact_equal(2.5 .* x, sx)
-
-xc = copy(x)
-@test is(scale!(xc, 2.5), xc)
-@test exact_equal(xc, sx)
-
 # plus and minus
 
 xa = SparseVector(8, [1,2,5,6,7], [3.25,5.25,-0.75,-2.0,-6.0])
@@ -208,12 +185,6 @@ xb = SparseVector(8, [1,2,5,6,7], [-3.25,-2.75,-0.75,9.0,6.0])
 @test x + full(x2) == full(xa)
 @test x - full(x2) == full(xb)
 
-# axpy
-
-y = full(x)
-@test is(axpy!(2.0, x2, y), y)
-@test y == full(x2 * 2.0 + x)
-
 
 # reduction
 
@@ -225,13 +196,3 @@ y = full(x)
 @test vecnorm(x, 1) == 5.5
 @test vecnorm(x, 2) == sqrt(14.375)
 @test vecnorm(x, Inf) == 3.5
-
-# dot
-
-dv = dot(xf, xf2)
-
-@test dot(x, x) == sumabs2(x)
-@test dot(x, x2) == dv
-@test dot(x2, x) == dv
-@test dot(full(x), x2) == dv
-@test dot(x, full(x2)) == dv

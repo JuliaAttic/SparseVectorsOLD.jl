@@ -1,6 +1,7 @@
 tests = [
-    "sparsevec", 
-    "sparsemat"]
+    "sparsevec",
+    "sparsemat",
+    "linalg"]
 
 for t in tests
     fp = "$t.jl"
