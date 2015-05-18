@@ -95,3 +95,75 @@ function Base.dot{Tx<:Real,Ty<:Real}(x::GenericSparseVector{Tx}, y::GenericSpars
     end
     return s
 end
+
+
+### BLAS Level-2
+
+function *{Ta,Tx}(A::StridedMatrix{Ta}, x::GenericSparseVector{Tx})
+    m, n = size(A)
+    length(x) == n || throw(DimensionMismatch())
+    Ty = promote_type(Ta, Tx)
+    y = Array(Ty, m)
+    A_mul_B!(y, A, x)
+end
+
+Base.A_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::StridedMatrix, x::GenericSparseVector{Tx}) =
+    A_mul_B!(one(Tx), A, x, zero(Ty), y)
+
+function Base.A_mul_B!(α::Number, A::StridedMatrix, x::GenericSparseVector, β::Number, y::StridedVector)
+    m, n = size(A)
+    length(x) == n && length(y) == m || throw(DimensionMismatch())
+    m == 0 && return y
+
+    nzind = x.nzind
+    nzval = x.nzval
+
+    if β != one(β)
+        β == zero(β) ? fill!(y, zero(eltype(y))) : scale!(y, β)
+    end
+
+    for i = 1:length(nzind)
+        j = nzind[i]
+        v = nzval[i] * α
+        for r = 1:m
+            y[r] += A[r,j] * v
+        end
+    end
+    return y
+end
+
+function Base.At_mul_B{Ta,Tx}(A::StridedMatrix{Ta}, x::GenericSparseVector{Tx})
+    m, n = size(A)
+    length(x) == m || throw(DimensionMismatch())
+    Ty = promote_type(Ta, Tx)
+    y = Array(Ty, n)
+    At_mul_B!(y, A, x)
+end
+
+Base.At_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::StridedMatrix, x::GenericSparseVector{Tx}) =
+    At_mul_B!(one(Tx), A, x, zero(Ty), y)
+
+function Base.At_mul_B!(α::Number, A::StridedMatrix, x::GenericSparseVector, β::Number, y::StridedVector)
+    m, n = size(A)
+    length(x) == m && length(y) == n || throw(DimensionMismatch())
+    n == 0 && return y
+
+    nzind = x.nzind
+    nzval = x.nzval
+
+    if β != one(β)
+        β == zero(β) ? fill!(y, zero(eltype(y))) : scale!(y, β)
+    end
+    _nnz = length(nzind)
+    _nnz == 0 && return y
+
+    s0 = zero(eltype(A)) * zero(eltype(x))
+    for j = 1:n
+        s = zero(s0)
+        for i = 1:_nnz
+            s += A[nzind[i], j] * nzval[i]
+        end
+        y[j] += s * α
+    end
+    return y
+end
