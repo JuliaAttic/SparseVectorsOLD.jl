@@ -15,6 +15,7 @@ This package provides two types ``SparseVector`` and ``SparseVectorView`` and a 
 - Get a view of a column in a sparse matrix (of CSC format), or a view of a range of columns.
 - Specialized arithmetic functions on sparse vectors, *e.g.* ``+``, ``-``, ``*``, etc.
 - Specialized reduction functions on sparse vectors, *e.g.* ``sum``, ``vecnorm``, etc.
+- Specialized linear algebraic functions, *e.g.* ``axpy!``, ``dot``, ``A * x``, ``At_mul_B``, etc.
 
 
 ## Types
