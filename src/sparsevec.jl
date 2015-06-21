@@ -218,7 +218,7 @@ function Base.showarray(io::IO, x::GenericSparseVector;
     end
     pad = ndigits(x.n)
     k = 0
-
+    sep = "\n\t"
     for k = 1:length(x.nzind)
         if k < half_screen_rows || k > nnz(x)-half_screen_rows
             print(io, "\t", '[', rpad(x.nzind[k], pad), "]  =  ")
