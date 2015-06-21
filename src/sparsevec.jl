@@ -223,10 +223,10 @@ function Base.showarray(io::IO, x::GenericSparseVector;
         if k < half_screen_rows || k > nnz(x)-half_screen_rows
             print(io, "\t", '[', rpad(x.nzind[k], pad), "]  =  ")
             showcompact(io, x.nzval[k])
-            print(io, "\n")
         elseif k == half_screen_rows
             print(io, sep, '\u22ee')
         end
+        print(io, "\n")
         k += 1
     end
 end
