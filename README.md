@@ -76,6 +76,10 @@ sprandn(n, p)      # construct a random sparse vector,
 sprand(n, p, rfn)  # construct a random sparse vector,
                    # where the non-zero values are generated using rfn
 
+## Element access
+x[i]         # get the i-th element of x
+
+x[i] = v     # set the i-th element of x to v
 
 ## Basics
 nnz(x)       # the number of stored entries
@@ -83,15 +87,12 @@ countnz(x)   # count the actual number of nonzero entries
 nonzeros(x)  # a vector of stored entries (i.e. x.nzval)
 
 full(x)      # construct a full vector, of type Vector{Tv}
-
 copy(x)      # return a copy of x, of type SparseVector{Tv,Ti}
-
 vec(x)       # return x itself (because `x` itself is a vector)
 
-x[i]         # get the i-th element of x
-
-x[i] = v     # set the i-th element of x to v
-
+reinterpret(T, x)   # reinterpret the element of x to type T
+float(x)            # convert x to a sparse vector of floating-point elements
+complex(x)          # convert x to a sparse vector of complex elements
 
 ## Conversion
 convert(SparseVector, s)  # convert s to an instance of SparseVector
