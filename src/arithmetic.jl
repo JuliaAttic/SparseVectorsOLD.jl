@@ -1,6 +1,28 @@
 
 ### Unary Map
 
+function _unarymap_selectnz{Tv,Ti<:Integer}(f::UnaryOp, x::AbstractSparseVector{Tv,Ti})
+    R = typeof(_eval(f, zero(Tv)))
+    xnzind = nonzeroinds(x)
+    xnzval = nonzeros(x)
+    m = length(xnzind)
+
+    ynzind = Ti[]
+    ynzval = R[]
+    sizehint!(ynzind, m)
+    sizehint!(ynzval, m)
+
+    @inbounds for j = 1:m
+        i = xnzind[j]
+        v = _eval(f, xnzval[j])
+        if v != zero(v)
+            push!(ynzind, i)
+            push!(ynzval, v)
+        end
+    end
+    SparseVector(length(x), ynzind, ynzval)
+end
+
 - (x::AbstractSparseVector) =
     SparseVector(length(x), copy(nonzeroinds(x)), -nonzeros(x))
 
@@ -8,6 +30,12 @@ abs(x::AbstractSparseVector) =
     SparseVector(length(x), copy(nonzeroinds(x)), abs(nonzeros(x)))
 abs2(x::AbstractSparseVector) =
     SparseVector(length(x), copy(nonzeroinds(x)), abs2(nonzeros(x)))
+
+real{T<:Real}(x::AbstractSparseVector{T}) = x
+real{T<:Complex}(x::AbstractSparseVector{T}) = _unarymap_selectnz(RealOp(), x)
+
+imag{Tv<:Real,Ti<:Integer}(x::AbstractSparseVector{Tv,Ti}) = SparseVector(Tv, Ti, length(x))
+imag{T<:Complex}(x::AbstractSparseVector{T}) = _unarymap_selectnz(ImagOp(), x)
 
 
 ### Binary Map
@@ -240,5 +268,13 @@ end
 .-(x::AbstractSparseVector, y::StridedVector) = _vsub(x, y)
 .*(x::AbstractSparseVector, y::StridedVector) = _vmul(x, y)
 
+# complex
+
+complex{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::AbstractSparseVector{Ty}) =
+    _binarymap(ComplexOp(), x, y, false)
+complex{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::AbstractSparseVector{Ty}) =
+    _binarymap(ComplexOp(), x, y, false)
+complex{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::StridedVector{Ty}) =
+    _binarymap(ComplexOp(), x, y, false)
 
 ###

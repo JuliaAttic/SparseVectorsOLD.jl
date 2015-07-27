@@ -1,5 +1,14 @@
 # not exported, used mainly for testing
 
+abstract UnaryOp
+
+immutable RealOp <: UnaryOp end
+_eval(::RealOp, x::Number) = real(x)
+
+immutable ImagOp <: UnaryOp end
+_eval(::ImagOp, x::Number) = imag(x)
+
+
 abstract BinaryOp
 
 immutable AddOp <: BinaryOp end

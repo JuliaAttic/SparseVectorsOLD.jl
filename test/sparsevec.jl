@@ -243,6 +243,25 @@ xm = SparseVector(8, [2, 6], [5.0, -19.25])
 @test full(x) .* x2 == full(xm)
 @test x .* full(x2) == full(xm)
 
+# complex
+
+@test exact_equal(complex(x, x),
+    SparseVector(8, [2,5,6], [1.25+1.25im, -0.75-0.75im, 3.5+3.5im]))
+
+@test exact_equal(complex(x, x2),
+    SparseVector(8, [1,2,5,6,7], [3.25im, 1.25+4.0im, -0.75+0.im, 3.5-5.5im, -6.0im]))
+
+@test exact_equal(complex(x2, x),
+    SparseVector(8, [1,2,5,6,7], [3.25+0.im, 4.0+1.25im, -0.75im, -5.5+3.5im, -6.0+0.im]))
+
+# real & imag
+
+@test is(real(x), x)
+@test exact_equal(imag(x), SparseVector(Float64, length(x)))
+
+xcp = complex(x, x2)
+@test exact_equal(real(xcp), x)
+@test exact_equal(imag(xcp), x2)
 
 ### Reduction
 

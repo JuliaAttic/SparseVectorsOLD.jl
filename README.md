@@ -114,14 +114,20 @@ scale(c, x)    # i.e. scale(x, c)
 x * c, x .* c  # multiple x and a scalar c
 c * x, c .* x  # i.e. x * c
 
+- x            # negate x
 x + y, x .+ y  # add x and y, x and y can be either dense or sparse
 x - y, x .- y  # subtract y from x, x and y can be either dense or sparse
+x .* y         # multiply x and y (element-wise), x and y can be either dense or sparse
 
 axpy!(a, x, y)  # y <- y + a * x
                 # a: a scalar number
                 # x: a sparse vector
                 # y: a dense vector
                 # This operation is very common in machine learning context
+
+real(x)         # get the real components
+imag(x)         # get the imaginary components
+complex(x, y)   # combine real sparse vectors x and y into a complex sparse vector
 
 abs(x)          # element-wise map of abs, returns a SparseVector instance
 abs2(x)         # element-wise map of abs2, returns a SparseVector instance

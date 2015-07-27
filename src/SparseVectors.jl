@@ -5,9 +5,11 @@ using Compat
 import Base:
     +, .+, -, .-, *, .*,
     length, size, nnz, countnz, nonzeros, getindex, setindex!,
-    convert, full, vec, copy, reinterpret, float, complex,
     showarray, show, writemime,
-    abs, abs2, sum, sumabs, sumabs2, vecnorm,
+    convert, full, vec, copy, reinterpret,
+    float, complex, real, imag,
+    abs, abs2, 
+    sum, sumabs, sumabs2, vecnorm,
     sprand, sprandn, scale, scale!, dot,
     A_mul_B!, At_mul_B, At_mul_B!
 
