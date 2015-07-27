@@ -73,10 +73,10 @@ function dot{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::AbstractSparseVe
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
 
-    xnzind = x.nzind
-    xnzval = x.nzval
-    ynzind = y.nzind
-    ynzval = y.nzval
+    xnzind = nonzeroinds(x)
+    xnzval = nonzeros(x)
+    ynzind = nonzeroinds(y)
+    ynzval = nonzeros(y)
     mx = length(xnzind)
     my = length(ynzind)
 

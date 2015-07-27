@@ -69,8 +69,8 @@ SparseVector{Tv,Ti}(n::Integer, s::AbstractVector{@compat(Tuple{Ti,Tv})}) =
 ### Element access
 
 function setindex!{Tv,Ti<:Integer}(x::SparseVector{Tv,Ti}, v::Tv, i::Ti)
-    nzind = x.nzind
-    nzval = x.nzval
+    nzind = nonzeroinds(x)
+    nzval = nonzeros(x)
 
     m = length(nzind)
     k = searchsortedfirst(nzind, i)

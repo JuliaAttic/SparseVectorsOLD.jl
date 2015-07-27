@@ -29,12 +29,13 @@ export
 
 # sources
 include("common.jl")
-include("generics.jl")
-include("arithmetic.jl")
 
 include("sparsevec.jl")
 include("sparsevecview.jl")
 include("sparsematview.jl")
+
+include("generics.jl")
+include("arithmetic.jl")
 include("linalg.jl")
 
 end # module
