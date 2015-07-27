@@ -3,7 +3,6 @@
 A Julia package to support sparse vectors.
 
 [![Build Status](https://travis-ci.org/JuliaSparse/SparseVectors.jl.svg?branch=master)](https://travis-ci.org/JuliaSparse/SparseVectors.jl)
-[![Coverage Status](https://img.shields.io/coveralls/JuliaSparse/SparseVectors.jl.svg)](https://coveralls.io/r/JuliaSparse/SparseVectors.jl)
 
 ## Overview
 
