@@ -83,7 +83,7 @@ function dot{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::AbstractSparseVe
     ix = 1
     iy = 1
     s = zero(Tx) * zero(Ty)
-    while ix <= mx && iy <= my
+    @inbounds while ix <= mx && iy <= my
         jx = xnzind[ix]
         jy = ynzind[iy]
         if jx == jy
@@ -100,7 +100,9 @@ function dot{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::AbstractSparseVe
 end
 
 
-### BLAS Level-2
+### BLAS-2 / dense A * sparse x -> dense y
+
+# A_mul_B
 
 function *{Ta,Tx}(A::StridedMatrix{Ta}, x::AbstractSparseVector{Tx})
     m, n = size(A)
@@ -117,23 +119,27 @@ function A_mul_B!(α::Number, A::StridedMatrix, x::AbstractSparseVector, β::Num
     m, n = size(A)
     length(x) == n && length(y) == m || throw(DimensionMismatch())
     m == 0 && return y
-
-    nzind = nonzeroinds(x)
-    nzval = nonzeros(x)
-
     if β != one(β)
         β == zero(β) ? fill!(y, zero(eltype(y))) : scale!(y, β)
     end
+    α == zero(α) && return y
 
-    for i = 1:length(nzind)
-        j = nzind[i]
-        v = nzval[i] * α
-        for r = 1:m
-            y[r] += A[r,j] * v
+    xnzind = nonzeroinds(x)
+    xnzval = nonzeros(x)
+    @inbounds for i = 1:length(xnzind)
+        v = xnzval[i]
+        if v != zero(v)
+            j = xnzind[i]
+            αv = v * α
+            for r = 1:m
+                y[r] += A[r,j] * αv
+            end
         end
     end
     return y
 end
+
+# At_mul_B
 
 function At_mul_B{Ta,Tx}(A::StridedMatrix{Ta}, x::AbstractSparseVector{Tx})
     m, n = size(A)
@@ -150,22 +156,120 @@ function At_mul_B!(α::Number, A::StridedMatrix, x::AbstractSparseVector, β::Nu
     m, n = size(A)
     length(x) == m && length(y) == n || throw(DimensionMismatch())
     n == 0 && return y
-
-    nzind = nonzeroinds(x)
-    nzval = nonzeros(x)
-
     if β != one(β)
         β == zero(β) ? fill!(y, zero(eltype(y))) : scale!(y, β)
     end
-    _nnz = length(nzind)
+    α == zero(α) && return y
+
+    xnzind = nonzeroinds(x)
+    xnzval = nonzeros(x)
+    _nnz = length(xnzind)
     _nnz == 0 && return y
 
     s0 = zero(eltype(A)) * zero(eltype(x))
-    for j = 1:n
+    @inbounds for j = 1:n
         s = zero(s0)
         for i = 1:_nnz
-            s += A[nzind[i], j] * nzval[i]
+            s += A[xnzind[i], j] * xnzval[i]
         end
+        y[j] += s * α
+    end
+    return y
+end
+
+
+### BLAS-2 / sparse A * sparse x -> dense y
+
+function sparsemv_to_dense(A::SparseMatrixCSC, x::AbstractSparseVector; trans::Bool=false)
+    m, n = size(A)
+    xlen = ifelse(trans, m, n)::Int
+    xlen == length(x) || throw(DimensionMismatch())
+    T = promote_type(eltype(A), eltype(x))
+    y = Array(T, ifelse(trans, n, m)::Int)
+    if trans
+        At_mul_B!(y, A, x)
+    else
+        A_mul_B!(y, A, x)
+    end
+    y
+end
+
+# A_mul_B
+
+A_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::SparseMatrixCSC, x::AbstractSparseVector{Tx}) =
+    A_mul_B!(one(Tx), A, x, zero(Ty), y)
+
+function A_mul_B!(α::Number, A::SparseMatrixCSC, x::AbstractSparseVector, β::Number, y::StridedVector)
+    m, n = size(A)
+    length(x) == n && length(y) == m || throw(DimensionMismatch())
+    m == 0 && return y
+    if β != one(β)
+        β == zero(β) ? fill!(y, zero(eltype(y))) : scale!(y, β)
+    end
+    α == zero(α) && return y
+
+    xnzind = nonzeroinds(x)
+    xnzval = nonzeros(x)
+    Acolptr = A.colptr
+    Arowval = A.rowval
+    Anzval = A.nzval
+
+    @inbounds for i = 1:length(xnzind)
+        v = xnzval[i]
+        if v != zero(v)
+            αv = v * α
+            j = xnzind[i]
+            for r = A.colptr[j]:(Acolptr[j+1]-1)
+                y[Arowval[r]] += Anzval[r] * αv
+            end
+        end
+    end
+    return y
+end
+
+# At_mul_B
+
+At_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::SparseMatrixCSC, x::AbstractSparseVector{Tx}) =
+    At_mul_B!(one(Tx), A, x, zero(Ty), y)
+
+function At_mul_B!{Tx,Ty}(α::Number, A::SparseMatrixCSC, x::AbstractSparseVector{Tx}, β::Number, y::StridedVector{Ty})
+    m, n = size(A)
+    length(x) == m && length(y) == n || throw(DimensionMismatch())
+    n == 0 && return y
+    if β != one(β)
+        β == zero(β) ? fill!(y, zero(eltype(y))) : scale!(y, β)
+    end
+    α == zero(α) && return y
+
+    xnzind = nonzeroinds(x)
+    xnzval = nonzeros(x)
+    Acolptr = A.colptr
+    Arowval = A.rowval
+    Anzval = A.nzval
+    mx = length(xnzind)
+
+    s0 = zero(eltype(A)) * zero(eltype(x))
+    @inbounds for j = 1:n
+        # s <- dot(A[:,j], x)
+        s = zero(s0)
+        ia = Acolptr[j]
+        ix = 1
+        last_ia = Acolptr[j+1]-1
+        while ia <= last_ia && ix <= mx
+            ra = Arowval[ia]
+            rx = xnzind[ix]
+            if ra == rx
+                s += Anzval[ia] * xnzval[ix]
+                ia += 1
+                ix += 1
+            elseif ra < rx
+                ia += 1
+            else
+                ix += 1
+            end
+        end
+
+        # update s * α to y
         y[j] += s * α
     end
     return y

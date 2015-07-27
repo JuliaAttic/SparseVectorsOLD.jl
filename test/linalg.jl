@@ -47,28 +47,44 @@ dv = dot(xf, xf2)
 
 ### BLAS Level-2
 
-# A * x
+# dense A * sparse x -> dense y
 
 A = randn(9, 16)
-
 for α in [0.0, 1.0, 2.0], β in [0.0, 0.5, 1.0]
     y = rand(9)
     rr = α * A * xf + β * y
     @test is(A_mul_B!(α, A, x, β, y), y)
     @test_approx_eq y rr
 end
-
 @test_approx_eq A * x A * xf
 
-# At_mul_B
-
 A = randn(16, 9)
-
 for α in [0.0, 1.0, 2.0], β in [0.0, 0.5, 1.0]
     y = rand(9)
     rr = α * A'xf + β * y
     @test is(At_mul_B!(α, A, x, β, y), y)
     @test_approx_eq y rr
 end
-
 @test_approx_eq At_mul_B(A, x) At_mul_B(A, xf)
+
+# sparse A * sparse x -> dense y
+
+A = sprandn(9, 16, 0.5)
+Af = full(A)
+for α in [0.0, 1.0, 2.0], β in [0.0, 0.5, 1.0]
+    y = rand(9)
+    rr = α * Af * xf + β * y
+    @test is(A_mul_B!(α, A, x, β, y), y)
+    @test_approx_eq y rr
+end
+@test_approx_eq sparsemv_to_dense(A, x) Af * xf
+
+A = sprandn(16, 9, 0.5)
+Af = full(A)
+for α in [0.0, 1.0, 2.0], β in [0.0, 0.5, 1.0]
+    y = rand(9)
+    rr = α * Af'xf + β * y
+    @test is(At_mul_B!(α, A, x, β, y), y)
+    @test_approx_eq y rr
+end
+@test_approx_eq sparsemv_to_dense(A, x; trans=true) At_mul_B(Af, xf)

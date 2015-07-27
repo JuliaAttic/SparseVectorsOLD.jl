@@ -25,7 +25,10 @@ export
     SparseVector, SparseVectorView,
 
     # sparsematview
-    unsafe_colrange
+    unsafe_colrange,
+
+    # linalg
+    sparsemv_to_dense
 
 # sources
 include("common.jl")
