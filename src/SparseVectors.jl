@@ -4,8 +4,8 @@ using Compat
 
 import Base:
     +, .+, -, .-, *, .*,
-    length, size, nnz, countnz, nonzeros,
-    getindex, setindex!, convert, full, vec, copy,
+    length, size, nnz, countnz, nonzeros, getindex, setindex!,
+    convert, full, vec, copy, reinterpret, float, complex,
     showarray, show, writemime,
     abs, abs2, sum, sumabs, sumabs2, vecnorm,
     sprand, sprandn, scale, scale!, dot,
@@ -23,6 +23,7 @@ export
 
     # sparsevec
     SparseVector, SparseVectorView,
+    nonzeroinds,
 
     # sparsematview
     unsafe_colrange,

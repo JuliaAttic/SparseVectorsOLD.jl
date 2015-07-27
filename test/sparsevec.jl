@@ -17,6 +17,7 @@ x = SparseVector(8, [2, 5, 6], [1.25, -0.75, 3.5])
 
 @test countnz(x) == 3
 @test nnz(x) == 3
+@test nonzeroinds(x) == [2, 5, 6]
 @test nonzeros(x) == [1.25, -0.75, 3.5]
 
 show(x)
@@ -53,6 +54,7 @@ x2 = view(_x2)
 
 @test countnz(x2) == 4
 @test nnz(x2) == 4
+@test nonzeroinds(x2) == [1, 2, 6, 7]
 @test nonzeros(x2) == [3.25, 4.0, -5.5, -6.0]
 
 # full
@@ -99,12 +101,13 @@ xc = SparseVector(8, ps)
 @test exact_equal(x, xc)
 
 xc = convert(SparseVector{Float32,Int}, x)
+xf32 = SparseVector(8, [2, 5, 6], [1.25f0, -0.75f0, 3.5f0])
 @test isa(xc, SparseVector{Float32,Int})
-@test exact_equal(x, xc)
+@test exact_equal(xc, xf32)
 
 xc = convert(SparseVector{Float32}, x)
 @test isa(xc, SparseVector{Float32,Int})
-@test exact_equal(x, xc)
+@test exact_equal(xc, xf32)
 
 # copy
 
@@ -113,6 +116,26 @@ xc = copy(x)
 @test !is(x.nzind, xc.nzval)
 @test !is(x.nzval, xc.nzval)
 @test exact_equal(x, xc)
+
+# reinterpret
+
+a = SparseVector(8, [2, 5, 6], Int32[12, 35, 72])
+au = reinterpret(UInt32, a)
+
+@test isa(au, SparseVector{UInt32,Int})
+@test exact_equal(au, SparseVector(8, [2, 5, 6], UInt32[12, 35, 72]))
+
+# float
+
+af = float(a)
+@test isa(af, SparseVector{Float64,Int})
+@test exact_equal(af, SparseVector(8, [2, 5, 6], [12., 35., 72.]))
+
+# complex
+
+acp = complex(af)
+@test isa(acp, SparseVector{Complex128,Int})
+@test exact_equal(acp, SparseVector(8, [2, 5, 6], complex([12., 35., 72.])))
 
 # getindex
 

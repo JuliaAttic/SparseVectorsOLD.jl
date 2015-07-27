@@ -47,7 +47,11 @@ writemime(io::IO, ::MIME"text/plain", x::AbstractSparseVector) = show(io, x)
 
 ### Comparison
 
+import Base.SparseMatrix.indtype
+
 function exact_equal(x::AbstractSparseVector, y::AbstractSparseVector)
+    eltype(x) == eltype(y) &&
+    indtype(x) == indtype(y) &&
     length(x) == length(y) &&
     nonzeroinds(x) == nonzeroinds(y) &&
     nonzeros(x) == nonzeros(y)
@@ -70,6 +74,20 @@ end
 vec(x::AbstractSparseVector) = x
 copy(x::AbstractSparseVector) =
     SparseVector(length(x), copy(nonzeroinds(x)), copy(nonzeros(x)))
+
+function reinterpret{T,Tv}(::Type{T}, x::AbstractSparseVector{Tv})
+    sizeof(T) == sizeof(Tv) ||
+        throw(ArgumentError("reinterpret of sparse vectors only supports element types of the same size."))
+    SparseVector(length(x), copy(nonzeroinds(x)), reinterpret(T, nonzeros(x)))
+end
+
+float{Tv<:FloatingPoint}(x::AbstractSparseVector{Tv}) = x
+float(x::AbstractSparseVector) =
+    SparseVector(length(x), copy(nonzeroinds(x)), float(nonzeros(x)))
+
+complex{Tv<:Complex}(x::AbstractSparseVector{Tv}) = x
+complex(x::AbstractSparseVector) =
+    SparseVector(length(x), copy(nonzeroinds(x)), complex(nonzeros(x)))
 
 
 ### Reduction
