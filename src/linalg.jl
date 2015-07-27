@@ -44,10 +44,10 @@ Base.scale{T<:Number,S<:Number}(x::GenericSparseVector{T}, a::S) =
 
 Base.scale(a::Number, x::GenericSparseVector) = scale(x, a)
 
-* (x::GenericSparseVector, a::Number) = scale(x, a)
-* (a::Number, x::GenericSparseVector) = scale(x, a)
-.* (x::GenericSparseVector, a::Number) = scale(x, a)
-.* (a::Number, x::GenericSparseVector) = scale(x, a)
+*(x::GenericSparseVector, a::Number) = scale(x, a)
+*(a::Number, x::GenericSparseVector) = scale(x, a)
+.*(x::GenericSparseVector, a::Number) = scale(x, a)
+.*(a::Number, x::GenericSparseVector) = scale(x, a)
 
 
 # dot

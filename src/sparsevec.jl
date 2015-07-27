@@ -389,21 +389,21 @@ function _mapbinop{Tx,Ty}(op::_BinOp, x::GenericSparseVector{Tx}, y::StridedVect
 end
 
 
-+ (x::GenericSparseVector, y::GenericSparseVector) = _mapbinop(_AddOp(), x, y)
-- (x::GenericSparseVector, y::GenericSparseVector) = _mapbinop(_SubOp(), x, y)
-+ (x::StridedVector, y::GenericSparseVector) = _mapbinop(_AddOp(), x, y)
-- (x::StridedVector, y::GenericSparseVector) = _mapbinop(_SubOp(), x, y)
-+ (x::GenericSparseVector, y::StridedVector) = _mapbinop(_AddOp(), x, y)
-- (x::GenericSparseVector, y::StridedVector) = _mapbinop(_SubOp(), x, y)
++(x::GenericSparseVector, y::GenericSparseVector) = _mapbinop(_AddOp(), x, y)
+-(x::GenericSparseVector, y::GenericSparseVector) = _mapbinop(_SubOp(), x, y)
++(x::StridedVector, y::GenericSparseVector) = _mapbinop(_AddOp(), x, y)
+-(x::StridedVector, y::GenericSparseVector) = _mapbinop(_SubOp(), x, y)
++(x::GenericSparseVector, y::StridedVector) = _mapbinop(_AddOp(), x, y)
+-(x::GenericSparseVector, y::StridedVector) = _mapbinop(_SubOp(), x, y)
 
-.+ (x::GenericSparseVector, y::GenericSparseVector) = (x + y)
-.- (x::GenericSparseVector, y::GenericSparseVector) = (x - y)
+.+(x::GenericSparseVector, y::GenericSparseVector) = (x + y)
+.-(x::GenericSparseVector, y::GenericSparseVector) = (x - y)
 
-.+ (x::StridedVector, y::GenericSparseVector) = (x + y)
-.- (x::StridedVector, y::GenericSparseVector) = (x - y)
+.+(x::StridedVector, y::GenericSparseVector) = (x + y)
+.-(x::StridedVector, y::GenericSparseVector) = (x - y)
 
-.+ (x::GenericSparseVector, y::StridedVector) = (x + y)
-.- (x::GenericSparseVector, y::StridedVector) = (x - y)
+.+(x::GenericSparseVector, y::StridedVector) = (x + y)
+.-(x::GenericSparseVector, y::StridedVector) = (x - y)
 
 
 Base.sum(x::GenericSparseVector) = sum(x.nzval)
