@@ -1,8 +1,6 @@
 
 ### Types
 
-typealias CVecView{T} ContiguousView{T,1,Vector{T}}
-
 immutable SparseVector{Tv,Ti<:Integer} <: AbstractSparseVector{Tv,Ti}
     n::Int              # the number of elements
     nzind::Vector{Ti}   # the indices of nonzeros
@@ -16,53 +14,59 @@ immutable SparseVector{Tv,Ti<:Integer} <: AbstractSparseVector{Tv,Ti}
     end
 end
 
+### Basic properties
+
+length(x::SparseVector) = x.n
+size(x::SparseVector) = (x.n,)
+nnz(x::SparseVector) = length(x.nzval)
+countnz(x::SparseVector) = countnz(x.nzval)
+nonzeros(x::SparseVector) = x.nzval
+nonzeroinds(x::SparseVector) = x.nzind
+
+### Construction
+
 SparseVector{Tv,Ti}(n::Integer, nzind::Vector{Ti}, nzval::Vector{Tv}) =
     SparseVector{Tv,Ti}(n, nzind, nzval)
 
-immutable SparseVectorView{Tv,Ti<:Integer} <: AbstractSparseVector{Tv,Ti}
-    n::Int                  # the number of elements
-    nzind::CVecView{Ti}     # the indices of nonzeros
-    nzval::CVecView{Tv}     # the values of nonzeros
+SparseVector(n::Integer) = SparseVector(n, Int[], Float64[])
+SparseVector{Tv}(::Type{Tv}, n::Integer) = SparseVector(n, Int[], Tv[])
+SparseVector{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer) = SparseVector(n, Ti[], Tv[])
 
-    function SparseVectorView(n::Integer, nzind::CVecView{Ti}, nzval::CVecView{Tv})
-        n >= 0 || throw(ArgumentError("The number of elements must be non-negative."))
-        length(nzind) == length(nzval) ||
-            throw(DimensionMismatch("The lengths of nzind and nzval are inconsistent."))
-        new(convert(Int, n), nzind, nzval)
+# make SparseVector from an iterable collection of (ind, value), e.g. dictionary
+function _make_sparsevec{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer, iter, checkrep::Bool)
+    m = length(iter)
+    nzind = Array(Ti, 0)
+    nzval = Array(Tv, 0)
+    sizehint!(nzind, m)
+    sizehint!(nzval, m)
+
+    for (k, v) in iter
+        if v != zero(v)
+            push!(nzind, k)
+            push!(nzval, v)
+        end
     end
+
+    p = sortperm(nzind)
+    permute!(nzind, p)
+    if checkrep
+        for i = 1:length(nzind)-1
+            nzind[i] != nzind[i+1] || error("Repeated indices.")
+        end
+    end
+    permute!(nzval, p)
+
+    return SparseVector{Tv,Ti}(convert(Int, n), nzind, nzval)
 end
 
-SparseVectorView{Tv,Ti}(n::Integer, nzind::CVecView{Ti}, nzval::CVecView{Tv}) =
-    SparseVectorView{Tv,Ti}(n, nzind, nzval)
+SparseVector{Tv,Ti<:Integer}(n::Integer, s::Associative{Ti,Tv}) =
+    _make_sparsevec(Tv, Ti, n, s, false)
 
-typealias GenericSparseVector{Tv,Ti} Union(SparseVector{Tv,Ti}, SparseVectorView{Tv,Ti})
-
-
-### Basic properties
-
-length(x::GenericSparseVector) = x.n
-size(x::GenericSparseVector) = (x.n,)
-
-nnz(x::GenericSparseVector) = length(x.nzval)
-countnz(x::GenericSparseVector) = countnz(x.nzval)
-nonzeros(x::GenericSparseVector) = x.nzval
-
-# not exported, used mainly for testing
-function exact_equal(x::GenericSparseVector, y::GenericSparseVector)
-    x.n == y.n && x.nzind == y.nzind && x.nzval == y.nzval
-end
+SparseVector{Tv,Ti}(n::Integer, s::AbstractVector{@compat(Tuple{Ti,Tv})}) =
+    _make_sparsevec(Tv, Ti, n, s, true)
 
 
 ### Element access
-
-function getindex{Tv}(x::GenericSparseVector{Tv}, i::Int)
-    m = length(x.nzind)
-    ii = searchsortedfirst(x.nzind, i)
-    (ii <= m && x.nzind[ii] == i) ? x.nzval[ii] : zero(Tv)
-end
-
-getindex(x::GenericSparseVector, i::Integer) = x[convert(Int, i)]
-
 
 function setindex!{Tv,Ti<:Integer}(x::SparseVector{Tv,Ti}, v::Tv, i::Ti)
     nzind = x.nzind
@@ -104,7 +108,6 @@ convert{Tv,Ti}(::Type{SparseVector{Tv}}, s::SparseMatrixCSC{Tv,Ti}) =
 convert{Tv,Ti}(::Type{SparseVector}, s::SparseMatrixCSC{Tv,Ti}) =
     convert(SparseVector{Tv,Ti}, s)
 
-
 # convert Vector to SparseVector
 function convert{Tv}(::Type{SparseVector{Tv,Int}}, s::Vector{Tv})
     n = length(s)
@@ -135,48 +138,7 @@ convert{Tv,TvS,TiS}(::Type{SparseVector{Tv}}, s::SparseVector{TvS,TiS}) =
     SparseVector{Tv,TiS}(s.n, s.nzind, convert(Vector{Tv}, s.nzval))
 
 
-### Construction
-
-SparseVector(n::Integer) = SparseVector(n, Int[], Float64[])
-SparseVector{Tv}(::Type{Tv}, n::Integer) = SparseVector(n, Int[], Tv[])
-SparseVector{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer) = SparseVector(n, Ti[], Tv[])
-
-# make SparseVector from an iterable collection of (ind, value), e.g. dictionary
-function _make_sparsevec{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer, iter, checkrep::Bool)
-    m = length(iter)
-    nzind = Array(Ti, 0)
-    nzval = Array(Tv, 0)
-    sizehint!(nzind, m)
-    sizehint!(nzval, m)
-
-    for (k, v) in iter
-        if v != zero(v)
-            push!(nzind, k)
-            push!(nzval, v)
-        end
-    end
-
-    p = sortperm(nzind)
-    permute!(nzind, p)
-    if checkrep
-        for i = 1:length(nzind)-1
-            nzind[i] != nzind[i+1] || error("Repeated indices.")
-        end
-    end
-    permute!(nzval, p)
-
-    return SparseVector{Tv,Ti}(convert(Int, n), nzind, nzval)
-end
-
-SparseVector{Tv,Ti<:Integer}(n::Integer, s::Associative{Ti,Tv}) =
-    _make_sparsevec(Tv, Ti, n, s, false)
-
-
-SparseVector{Tv,Ti}(n::Integer, s::AbstractVector{@compat(Tuple{Ti,Tv})}) =
-    _make_sparsevec(Tv, Ti, n, s, true)
-
-
-# sprand
+### Rand Construction
 
 function sprand{T}(n::Integer, p::FloatingPoint, rfn::Function, ::Type{T})
     I = randsubseq(1:convert(Int, n), p)
@@ -192,222 +154,4 @@ end
 
 sprand{T}(n::Integer, p::FloatingPoint, ::Type{T}) = sprand(n, p, rand, T)
 sprand(n::Integer, p::FloatingPoint) = sprand(n, p, rand)
-
 sprandn(n::Integer, p::FloatingPoint) = sprand(n, p, randn)
-
-
-### View
-
-view(x::SparseVector) = SparseVectorView(length(x), view(x.nzind), view(x.nzval))
-
-
-### Show
-
-function showarray(io::IO, x::GenericSparseVector;
-                        header::Bool=true, limit::Bool=Base._limit_output,
-                        rows = Base.tty_size()[1], repr=false)
-    if header
-        print(io, "Sparse vector, length = ", x.n,
-            ", with ", nnz(x), " ", eltype(x), " entries:", "\n")
-    end
-
-    if limit
-        half_screen_rows = div(rows - 8, 2)
-    else
-        half_screen_rows = typemax(Int)
-    end
-    pad = ndigits(x.n)
-    k = 0
-    sep = "\n\t"
-    for k = 1:length(x.nzind)
-        if k < half_screen_rows || k > nnz(x)-half_screen_rows
-            print(io, "\t", '[', rpad(x.nzind[k], pad), "]  =  ")
-            showcompact(io, x.nzval[k])
-        elseif k == half_screen_rows
-            print(io, sep, '\u22ee')
-        end
-        print(io, "\n")
-        k += 1
-    end
-end
-
-show(io::IO, x::GenericSparseVector) = Base.showarray(io, x)
-writemime(io::IO, ::MIME"text/plain", x::GenericSparseVector) = show(io, x)
-
-
-### Array manipulation
-
-function full{Tv}(x::GenericSparseVector{Tv})
-    n = x.n
-    nzind = x.nzind
-    nzval = x.nzval
-    r = zeros(Tv, n)
-    for i = 1:length(nzind)
-        r[nzind[i]] = nzval[i]
-    end
-    return r
-end
-
-vec(x::GenericSparseVector) = x
-
-copy(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), copy(x.nzval))
-
-
-### Computation
-
-abs(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), abs(x.nzval))
-abs2(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), abs2(x.nzval))
-
-abstract _BinOp
-
-type _AddOp <: _BinOp end
-
-_eval(::_AddOp, x, y) = x + y
-_eval1(::_AddOp, x) = x
-_eval2(::_AddOp, y) = y
-
-type _SubOp <: _BinOp end
-
-_eval(::_SubOp, x, y) = x - y
-_eval1(::_SubOp, x) = x
-_eval2(::_SubOp, y) = -y
-
-
-function _mapbinop{Tx,Ty}(op::_BinOp, x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
-    R = typeof(_eval(op, zero(Tx), zero(Ty)))
-    n = length(x)
-    length(y) == n || throw(DimensionMismatch())
-
-    xnzind = x.nzind
-    xnzval = x.nzval
-    ynzind = y.nzind
-    ynzval = y.nzval
-    mx = length(xnzind)
-    my = length(ynzind)
-
-    ix = 1
-    iy = 1
-    rind = Array(Int, 0)
-    rval = Array(R, 0)
-    sizehint!(rind, mx + my)
-    sizehint!(rval, mx + my)
-
-    @inbounds while ix <= mx && iy <= my
-        jx = xnzind[ix]
-        jy = ynzind[iy]
-
-        if jx == jy
-            v = _eval(op, xnzval[ix], ynzval[iy])
-            if v != zero(v)
-                push!(rind, jx)
-                push!(rval, v)
-            end
-            ix += 1
-            iy += 1
-        elseif jx < jy
-            push!(rind, jx)
-            push!(rval, _eval1(op, xnzval[ix]))
-            ix += 1
-        else
-            push!(rind, jy)
-            push!(rval, _eval2(op, ynzval[iy]))
-            iy += 1
-        end
-    end
-
-    @inbounds while ix <= mx
-        push!(rind, xnzind[ix])
-        push!(rval, _eval1(op, xnzval[ix]))
-        ix += 1
-    end
-
-    @inbounds while iy <= my
-        push!(rind, ynzind[iy])
-        push!(rval, _eval2(op, ynzval[iy]))
-        iy += 1
-    end
-
-    return SparseVector(n, rind, rval)
-end
-
-function _mapbinop{Tx,Ty}(op::_BinOp, x::StridedVector{Tx}, y::GenericSparseVector{Ty})
-    R = typeof(_eval(op, zero(Tx), zero(Ty)))
-    n = length(x)
-    length(y) == n || throw(DimensionMismatch())
-
-    ynzind = y.nzind
-    ynzval = y.nzval
-    m = length(ynzind)
-
-    dst = Array(R, n)
-    ii = 1
-    @inbounds for i = 1:m
-        j = ynzind[i]
-        while ii < j
-            dst[ii] = _eval1(op, x[ii])
-            ii += 1
-        end
-        # at this point: ii == j
-        dst[j] = _eval(op, x[j], ynzval[i])
-        ii += 1
-    end
-
-    @inbounds while ii <= n
-        dst[ii] = _eval1(op, x[ii])
-        ii += 1
-    end
-    return dst
-end
-
-function _mapbinop{Tx,Ty}(op::_BinOp, x::GenericSparseVector{Tx}, y::StridedVector{Ty})
-    R = typeof(_eval(op, zero(Tx), zero(Ty)))
-    n = length(x)
-    length(y) == n || throw(DimensionMismatch())
-
-    xnzind = x.nzind
-    xnzval = x.nzval
-    m = length(xnzind)
-
-    dst = Array(R, n)
-    ii = 1
-    @inbounds for i = 1:m
-        j = xnzind[i]
-        while ii < j
-            dst[ii] = _eval2(op, y[ii])
-            ii += 1
-        end
-        # at this point: ii == j
-        dst[j] = _eval(op, xnzval[i], y[j])
-        ii += 1
-    end
-
-    @inbounds while ii <= n
-        dst[ii] = _eval2(op, y[ii])
-        ii += 1
-    end
-    return dst
-end
-
-
-+(x::GenericSparseVector, y::GenericSparseVector) = _mapbinop(_AddOp(), x, y)
--(x::GenericSparseVector, y::GenericSparseVector) = _mapbinop(_SubOp(), x, y)
-+(x::StridedVector, y::GenericSparseVector) = _mapbinop(_AddOp(), x, y)
--(x::StridedVector, y::GenericSparseVector) = _mapbinop(_SubOp(), x, y)
-+(x::GenericSparseVector, y::StridedVector) = _mapbinop(_AddOp(), x, y)
--(x::GenericSparseVector, y::StridedVector) = _mapbinop(_SubOp(), x, y)
-
-.+(x::GenericSparseVector, y::GenericSparseVector) = (x + y)
-.-(x::GenericSparseVector, y::GenericSparseVector) = (x - y)
-
-.+(x::StridedVector, y::GenericSparseVector) = (x + y)
-.-(x::StridedVector, y::GenericSparseVector) = (x - y)
-
-.+(x::GenericSparseVector, y::StridedVector) = (x + y)
-.-(x::GenericSparseVector, y::StridedVector) = (x - y)
-
-
-sum(x::GenericSparseVector) = sum(x.nzval)
-sumabs(x::GenericSparseVector) = sumabs(x.nzval)
-sumabs2(x::GenericSparseVector) = sumabs2(x.nzval)
-
-vecnorm(x::GenericSparseVector, p::Real=2) = vecnorm(x.nzval, p)

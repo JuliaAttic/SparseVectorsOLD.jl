@@ -1,6 +1,5 @@
 module SparseVectors
 
-using ArrayViews
 using Compat
 
 import Base:
@@ -29,8 +28,12 @@ export
     unsafe_colrange
 
 # sources
+include("common.jl")
+include("generics.jl")
 include("sparsevec.jl")
+include("sparsevecview.jl")
 include("sparsematview.jl")
+include("arithmetic.jl")
 include("linalg.jl")
 
 end # module
