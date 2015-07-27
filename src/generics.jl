@@ -47,11 +47,9 @@ writemime(io::IO, ::MIME"text/plain", x::AbstractSparseVector) = show(io, x)
 
 ### Comparison
 
-import Base.SparseMatrix.indtype
-
 function exact_equal(x::AbstractSparseVector, y::AbstractSparseVector)
     eltype(x) == eltype(y) &&
-    indtype(x) == indtype(y) &&
+    eltype(nonzeroinds(x)) == eltype(nonzeroinds(y)) &&
     length(x) == length(y) &&
     nonzeroinds(x) == nonzeroinds(y) &&
     nonzeros(x) == nonzeros(y)
