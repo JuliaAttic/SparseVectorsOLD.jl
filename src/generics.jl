@@ -31,7 +31,7 @@ function showarray(io::IO, x::AbstractSparseVector;
     sep = "\n\t"
     for k = 1:length(nzind)
         if k < half_screen_rows || k > xnnz - half_screen_rows
-            print(io, "\t", '[', rpad(nzind[k], pad), "]  =  ")
+            print(io, "  ", '[', rpad(nzind[k], pad), "]  =  ")
             showcompact(io, nzval[k])
         elseif k == half_screen_rows
             print(io, sep, '\u22ee')
