@@ -1,4 +1,5 @@
 using Base.Test
+using Compat
 using SparseVectors
 
 import SparseVectors: exact_equal
