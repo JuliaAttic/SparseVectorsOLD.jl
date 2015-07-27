@@ -44,6 +44,7 @@ function _binarymap{Tx,Ty}(f::BinaryOp,
                            x::AbstractSparseVector{Tx},
                            y::AbstractSparseVector{Ty},
                            nz2z::Bool)  # nz2z is true, when result == 0 iff either operand is 0
+
     R = typeof(_eval(f, zero(Tx), zero(Ty)))
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
@@ -54,25 +55,25 @@ function _binarymap{Tx,Ty}(f::BinaryOp,
     ynzval = nonzeros(y)
     mx = length(xnzind)
     my = length(ynzind)
+    (mx == 0 || my == 0) && return SparseVector(R, 0)
 
+    cap = (nz2z ? min(mx, my) : mx + my)::Int
+
+    rind = Array(Int, cap)
+    rval = Array(R, cap)
+    ir = 0
     ix = 1
     iy = 1
-    rind = Array(Int, 0)
-    rval = Array(R, 0)
-    sizehint!(rind, mx + my)
-    sizehint!(rval, mx + my)
 
     if nz2z
         @inbounds while ix <= mx && iy <= my
             jx = xnzind[ix]
             jy = ynzind[iy]
-
             if jx == jy
                 v = _eval(f, xnzval[ix], ynzval[iy])
-                if v != zero(v)
-                    push!(rind, jx)
-                    push!(rval, v)
-                end
+                ir += 1
+                rind[ir] = jx
+                rval[ir] = v
                 ix += 1
                 iy += 1
             elseif jx < jy
@@ -80,46 +81,60 @@ function _binarymap{Tx,Ty}(f::BinaryOp,
             else
                 iy += 1
             end
+            resize!(rind, ir)
+            resize!(rval, ir)
         end
     else
         @inbounds while ix <= mx && iy <= my
             jx = xnzind[ix]
             jy = ynzind[iy]
-
             if jx == jy
                 v = _eval(f, xnzval[ix], ynzval[iy])
                 if v != zero(v)
-                    push!(rind, jx)
-                    push!(rval, v)
+                    ir += 1
+                    rind[ir] = jx
+                    rval[ir] = v
                 end
                 ix += 1
                 iy += 1
             elseif jx < jy
                 v = _eval(f, xnzval[ix], zero(Ty))
                 if v != zero(v)
-                    push!(rind, jx)
-                    push!(rval, v)
+                    ir += 1
+                    rind[ir] = jx
+                    rval[ir] = v
                 end
                 ix += 1
             else
                 v = _eval(f, zero(Tx), ynzval[iy])
                 if v != zero(v)
-                    push!(rind, jy)
-                    push!(rval, v)
+                    ir += 1
+                    rind[ir] = jy
+                    rval[ir] = v
                 end
                 iy += 1
             end
         end
         @inbounds while ix <= mx
-            push!(rind, xnzind[ix])
-            push!(rval, _eval(f, xnzval[ix], zero(Ty)))
+            v = _eval(f, xnzval[ix], zero(Ty))
+            if v != zero(v)
+                ir += 1
+                rind[ir] = xnzind[ix]
+                rval[ir] = v
+            end
             ix += 1
         end
         @inbounds while iy <= my
-            push!(rind, ynzind[iy])
-            push!(rval, _eval(f, zero(Tx), ynzval[iy]))
+            v = _eval(f, zero(Tx), ynzval[iy])
+            if v != zero(v)
+                ir += 1
+                rind[ir] = ynzind[iy]
+                rval[ir] = v
+            end
             iy += 1
         end
+        resize!(rind, ir)
+        resize!(rval, ir)
     end
     return SparseVector(n, rind, rval)
 end
@@ -149,7 +164,7 @@ function _binarymap{Tx,Ty}(f::BinaryOp,
             dst[j] = _eval(f, x[j], ynzval[i])
             ii += 1
         end
-        while ii <= n
+        @inbounds while ii <= n
             dst[ii] = zero(R)
             ii += 1
         end
@@ -164,7 +179,7 @@ function _binarymap{Tx,Ty}(f::BinaryOp,
             dst[j] = _eval(f, x[j], ynzval[i])
             ii += 1
         end
-        while ii <= n
+        @inbounds while ii <= n
             dst[ii] = _eval(f, x[ii], zero(Ty))
             ii += 1
         end
