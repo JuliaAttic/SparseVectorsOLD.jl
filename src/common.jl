@@ -1,15 +1,12 @@
 # not exported, used mainly for testing
 
-abstract ZeroAwareBinaryOp
-immutable _Zero end
-const _zero = _Zero()
+abstract BinaryOp
 
-immutable ZeroAwareAdd <: ZeroAwareBinaryOp end
-_eval(::ZeroAwareAdd, x::Number, y::Number) = x + y
-_eval(::ZeroAwareAdd, x::Number, ::_Zero) = x
-_eval(::ZeroAwareAdd, ::_Zero, y) = y
+immutable AddOp <: BinaryOp end
+_eval(::AddOp, x::Number, y::Number) = x + y
 
-immutable ZeroAwareSub <: ZeroAwareBinaryOp end
-_eval(::ZeroAwareSub, x::Number, y::Number) = x - y
-_eval(::ZeroAwareSub, x::Number, ::_Zero) = x
-_eval(::ZeroAwareSub, ::_Zero, y::Number) = -y
+immutable SubOp <: BinaryOp end
+_eval(::SubOp, x::Number, y::Number) = x - y
+
+immutable ComplexOp <: BinaryOp end
+_eval(::ComplexOp, x::Real, y::Real) = complex(x, y)
