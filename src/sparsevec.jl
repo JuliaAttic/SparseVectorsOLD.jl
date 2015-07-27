@@ -40,12 +40,12 @@ typealias GenericSparseVector{Tv,Ti} Union(SparseVector{Tv,Ti}, SparseVectorView
 
 ### Basic properties
 
-Base.length(x::GenericSparseVector) = x.n
-Base.size(x::GenericSparseVector) = (x.n,)
+length(x::GenericSparseVector) = x.n
+size(x::GenericSparseVector) = (x.n,)
 
-Base.nnz(x::GenericSparseVector) = length(x.nzval)
-Base.countnz(x::GenericSparseVector) = countnz(x.nzval)
-Base.nonzeros(x::GenericSparseVector) = x.nzval
+nnz(x::GenericSparseVector) = length(x.nzval)
+countnz(x::GenericSparseVector) = countnz(x.nzval)
+nonzeros(x::GenericSparseVector) = x.nzval
 
 # not exported, used mainly for testing
 function exact_equal(x::GenericSparseVector, y::GenericSparseVector)
@@ -55,16 +55,16 @@ end
 
 ### Element access
 
-function Base.getindex{Tv}(x::GenericSparseVector{Tv}, i::Int)
+function getindex{Tv}(x::GenericSparseVector{Tv}, i::Int)
     m = length(x.nzind)
     ii = searchsortedfirst(x.nzind, i)
     (ii <= m && x.nzind[ii] == i) ? x.nzval[ii] : zero(Tv)
 end
 
-Base.getindex(x::GenericSparseVector, i::Integer) = x[convert(Int, i)]
+getindex(x::GenericSparseVector, i::Integer) = x[convert(Int, i)]
 
 
-function Base.setindex!{Tv,Ti<:Integer}(x::SparseVector{Tv,Ti}, v::Tv, i::Ti)
+function setindex!{Tv,Ti<:Integer}(x::SparseVector{Tv,Ti}, v::Tv, i::Ti)
     nzind = x.nzind
     nzval = x.nzval
 
@@ -86,27 +86,27 @@ function Base.setindex!{Tv,Ti<:Integer}(x::SparseVector{Tv,Ti}, v::Tv, i::Ti)
     x
 end
 
-Base.setindex!{Tv, Ti<:Integer}(x::SparseVector{Tv,Ti}, v, i::Integer) =
+setindex!{Tv, Ti<:Integer}(x::SparseVector{Tv,Ti}, v, i::Integer) =
     setindex!(x, convert(Tv, v), convert(Ti, i))
 
 
 ### Conversion
 
 # convert SparseMatrixCSC to SparseVector
-function Base.convert{Tv,Ti<:Integer}(::Type{SparseVector{Tv,Ti}}, s::SparseMatrixCSC{Tv,Ti})
+function convert{Tv,Ti<:Integer}(::Type{SparseVector{Tv,Ti}}, s::SparseMatrixCSC{Tv,Ti})
     size(s, 2) == 1 || throw(ArgumentError("The input argument must have a single-column."))
     SparseVector(s.m, s.rowval, s.nzval)
 end
 
-Base.convert{Tv,Ti}(::Type{SparseVector{Tv}}, s::SparseMatrixCSC{Tv,Ti}) =
+convert{Tv,Ti}(::Type{SparseVector{Tv}}, s::SparseMatrixCSC{Tv,Ti}) =
     convert(SparseVector{Tv,Ti}, s)
 
-Base.convert{Tv,Ti}(::Type{SparseVector}, s::SparseMatrixCSC{Tv,Ti}) =
+convert{Tv,Ti}(::Type{SparseVector}, s::SparseMatrixCSC{Tv,Ti}) =
     convert(SparseVector{Tv,Ti}, s)
 
 
 # convert Vector to SparseVector
-function Base.convert{Tv}(::Type{SparseVector{Tv,Int}}, s::Vector{Tv})
+function convert{Tv}(::Type{SparseVector{Tv,Int}}, s::Vector{Tv})
     n = length(s)
     nzind = Array(Int, 0)
     nzval = Array(Tv, 0)
@@ -120,18 +120,18 @@ function Base.convert{Tv}(::Type{SparseVector{Tv,Int}}, s::Vector{Tv})
     return SparseVector(n, nzind, nzval)
 end
 
-Base.convert{Tv}(::Type{SparseVector{Tv}}, s::Vector{Tv}) =
+convert{Tv}(::Type{SparseVector{Tv}}, s::Vector{Tv}) =
     convert(SparseVector{Tv,Int}, s)
 
-Base.convert{Tv}(::Type{SparseVector}, s::Vector{Tv}) =
+convert{Tv}(::Type{SparseVector}, s::Vector{Tv}) =
     convert(SparseVector{Tv,Int}, s)
 
 
 # convert between different types of SparseVector
-Base.convert{Tv,Ti,TvS,TiS}(::Type{SparseVector{Tv,Ti}}, s::SparseVector{TvS,TiS}) =
+convert{Tv,Ti,TvS,TiS}(::Type{SparseVector{Tv,Ti}}, s::SparseVector{TvS,TiS}) =
     SparseVector{Tv,Ti}(s.n, convert(Vector{Ti}, s.nzind), convert(Vector{Tv}, s.nzval))
 
-Base.convert{Tv,TvS,TiS}(::Type{SparseVector{Tv}}, s::SparseVector{TvS,TiS}) =
+convert{Tv,TvS,TiS}(::Type{SparseVector{Tv}}, s::SparseVector{TvS,TiS}) =
     SparseVector{Tv,TiS}(s.n, s.nzind, convert(Vector{Tv}, s.nzval))
 
 
@@ -178,22 +178,22 @@ SparseVector{Tv,Ti}(n::Integer, s::AbstractVector{@compat(Tuple{Ti,Tv})}) =
 
 # sprand
 
-function Base.sprand{T}(n::Integer, p::FloatingPoint, rfn::Function, ::Type{T})
+function sprand{T}(n::Integer, p::FloatingPoint, rfn::Function, ::Type{T})
     I = randsubseq(1:convert(Int, n), p)
     V = rfn(T, length(I))
     SparseVector(n, I, V)
 end
 
-function Base.sprand(n::Integer, p::FloatingPoint, rfn::Function)
+function sprand(n::Integer, p::FloatingPoint, rfn::Function)
     I = randsubseq(1:convert(Int, n), p)
     V = rfn(length(I))
     SparseVector(n, I, V)
 end
 
-Base.sprand{T}(n::Integer, p::FloatingPoint, ::Type{T}) = sprand(n, p, rand, T)
-Base.sprand(n::Integer, p::FloatingPoint) = sprand(n, p, rand)
+sprand{T}(n::Integer, p::FloatingPoint, ::Type{T}) = sprand(n, p, rand, T)
+sprand(n::Integer, p::FloatingPoint) = sprand(n, p, rand)
 
-Base.sprandn(n::Integer, p::FloatingPoint) = sprand(n, p, randn)
+sprandn(n::Integer, p::FloatingPoint) = sprand(n, p, randn)
 
 
 ### View
@@ -203,7 +203,7 @@ view(x::SparseVector) = SparseVectorView(length(x), view(x.nzind), view(x.nzval)
 
 ### Show
 
-function Base.showarray(io::IO, x::GenericSparseVector;
+function showarray(io::IO, x::GenericSparseVector;
                         header::Bool=true, limit::Bool=Base._limit_output,
                         rows = Base.tty_size()[1], repr=false)
     if header
@@ -231,13 +231,13 @@ function Base.showarray(io::IO, x::GenericSparseVector;
     end
 end
 
-Base.show(io::IO, x::GenericSparseVector) = Base.showarray(io, x)
-Base.writemime(io::IO, ::MIME"text/plain", x::GenericSparseVector) = show(io, x)
+show(io::IO, x::GenericSparseVector) = Base.showarray(io, x)
+writemime(io::IO, ::MIME"text/plain", x::GenericSparseVector) = show(io, x)
 
 
 ### Array manipulation
 
-function Base.full{Tv}(x::GenericSparseVector{Tv})
+function full{Tv}(x::GenericSparseVector{Tv})
     n = x.n
     nzind = x.nzind
     nzval = x.nzval
@@ -248,15 +248,15 @@ function Base.full{Tv}(x::GenericSparseVector{Tv})
     return r
 end
 
-Base.vec(x::GenericSparseVector) = x
+vec(x::GenericSparseVector) = x
 
-Base.copy(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), copy(x.nzval))
+copy(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), copy(x.nzval))
 
 
 ### Computation
 
-Base.abs(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), abs(x.nzval))
-Base.abs2(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), abs2(x.nzval))
+abs(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), abs(x.nzval))
+abs2(x::GenericSparseVector) = SparseVector(x.n, copy(x.nzind), abs2(x.nzval))
 
 abstract _BinOp
 
@@ -406,8 +406,8 @@ end
 .-(x::GenericSparseVector, y::StridedVector) = (x - y)
 
 
-Base.sum(x::GenericSparseVector) = sum(x.nzval)
-Base.sumabs(x::GenericSparseVector) = sumabs(x.nzval)
-Base.sumabs2(x::GenericSparseVector) = sumabs2(x.nzval)
+sum(x::GenericSparseVector) = sum(x.nzval)
+sumabs(x::GenericSparseVector) = sumabs(x.nzval)
+sumabs2(x::GenericSparseVector) = sumabs2(x.nzval)
 
-Base.vecnorm(x::GenericSparseVector, p::Real=2) = vecnorm(x.nzval, p)
+vecnorm(x::GenericSparseVector, p::Real=2) = vecnorm(x.nzval, p)
