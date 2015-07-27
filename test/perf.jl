@@ -41,7 +41,8 @@ n = 1_000_000
 x = sprand(n, 0.25)
 y = sprand(n, 0.25)
 
+gc();
+gc_enable(false);
 bench_vadd(x, y, 20)
 bench_vmul(x, y, 20)
-bench_vadd(x, y, 20)
-bench_vmul(x, y, 20)
+gc_enable(true);
