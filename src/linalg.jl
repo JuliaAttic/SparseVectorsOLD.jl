@@ -3,11 +3,10 @@
 
 # axpy
 
-function LinAlg.axpy!(a::Number, x::GenericSparseVector, y::StridedVector)
+function LinAlg.axpy!(a::Number, x::AbstractSparseVector, y::StridedVector)
     length(x) == length(y) || throw(DimensionMismatch())
-
-    nzind = x.nzind
-    nzval = x.nzval
+    nzind = nonzeroinds(x)
+    nzval = nonzeros(x)
     m = length(nzind)
 
     if a == one(a)
@@ -35,28 +34,32 @@ end
 
 # scale
 
-scale!(x::GenericSparseVector, a::Number) = (scale!(x.nzval, a); x)
+scale!(x::AbstractSparseVector, a::Real) = (scale!(nonzeros(x), a); x)
+scale!(x::AbstractSparseVector, a::Complex) = (scale!(nonzeros(x), a); x)
+scale!(a::Real, x::AbstractSparseVector) = scale!(nonzeros(x), a)
+scale!(a::Complex, x::AbstractSparseVector) = scale!(nonzeros(x), a)
 
-scale!(a::Number, x::GenericSparseVector) = scale!(x, a)
+scale(x::AbstractSparseVector, a::Real) =
+    SparseVector(length(x), copy(nonzeroinds(x)), scale(nonzeros(x), a))
+scale(x::AbstractSparseVector, a::Complex) =
+    SparseVector(length(x), copy(nonzeroinds(x)), scale(nonzeros(x), a))
 
-scale{T<:Number,S<:Number}(x::GenericSparseVector{T}, a::S) =
-    SparseVector(x.n, copy(x.nzind), scale(x.nzval, a))
+scale(a::Real, x::AbstractSparseVector) = scale(x, a)
+scale(a::Complex, x::AbstractSparseVector) = scale(x, a)
 
-scale(a::Number, x::GenericSparseVector) = scale(x, a)
-
-*(x::GenericSparseVector, a::Number) = scale(x, a)
-*(a::Number, x::GenericSparseVector) = scale(x, a)
-.*(x::GenericSparseVector, a::Number) = scale(x, a)
-.*(a::Number, x::GenericSparseVector) = scale(x, a)
+*(x::AbstractSparseVector, a::Number) = scale(x, a)
+*(a::Number, x::AbstractSparseVector) = scale(x, a)
+.*(x::AbstractSparseVector, a::Number) = scale(x, a)
+.*(a::Number, x::AbstractSparseVector) = scale(x, a)
 
 
 # dot
 
-function dot{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::GenericSparseVector{Ty})
+function dot{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::AbstractSparseVector{Ty})
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
-    nzind = y.nzind
-    nzval = y.nzval
+    nzind = nonzeroinds(y)
+    nzval = nonzeros(y)
     s = zero(Tx) * zero(Ty)
     for i = 1:length(nzind)
         s += x[nzind[i]] * nzval[i]
@@ -64,9 +67,9 @@ function dot{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::GenericSparseVector{Ty}
     return s
 end
 
-dot{Tx<:Real,Ty<:Real}(x::GenericSparseVector{Tx}, y::StridedVector{Ty}) = dot(y, x)
+dot{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::AbstractVector{Ty}) = dot(y, x)
 
-function dot{Tx<:Real,Ty<:Real}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
+function dot{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::AbstractSparseVector{Ty})
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
 
@@ -99,7 +102,7 @@ end
 
 ### BLAS Level-2
 
-function *{Ta,Tx}(A::StridedMatrix{Ta}, x::GenericSparseVector{Tx})
+function *{Ta,Tx}(A::StridedMatrix{Ta}, x::AbstractSparseVector{Tx})
     m, n = size(A)
     length(x) == n || throw(DimensionMismatch())
     Ty = promote_type(Ta, Tx)
@@ -107,16 +110,16 @@ function *{Ta,Tx}(A::StridedMatrix{Ta}, x::GenericSparseVector{Tx})
     A_mul_B!(y, A, x)
 end
 
-A_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::StridedMatrix, x::GenericSparseVector{Tx}) =
+A_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::StridedMatrix, x::AbstractSparseVector{Tx}) =
     A_mul_B!(one(Tx), A, x, zero(Ty), y)
 
-function A_mul_B!(α::Number, A::StridedMatrix, x::GenericSparseVector, β::Number, y::StridedVector)
+function A_mul_B!(α::Number, A::StridedMatrix, x::AbstractSparseVector, β::Number, y::StridedVector)
     m, n = size(A)
     length(x) == n && length(y) == m || throw(DimensionMismatch())
     m == 0 && return y
 
-    nzind = x.nzind
-    nzval = x.nzval
+    nzind = nonzeroinds(x)
+    nzval = nonzeros(x)
 
     if β != one(β)
         β == zero(β) ? fill!(y, zero(eltype(y))) : scale!(y, β)
@@ -132,7 +135,7 @@ function A_mul_B!(α::Number, A::StridedMatrix, x::GenericSparseVector, β::Numb
     return y
 end
 
-function At_mul_B{Ta,Tx}(A::StridedMatrix{Ta}, x::GenericSparseVector{Tx})
+function At_mul_B{Ta,Tx}(A::StridedMatrix{Ta}, x::AbstractSparseVector{Tx})
     m, n = size(A)
     length(x) == m || throw(DimensionMismatch())
     Ty = promote_type(Ta, Tx)
@@ -140,16 +143,16 @@ function At_mul_B{Ta,Tx}(A::StridedMatrix{Ta}, x::GenericSparseVector{Tx})
     At_mul_B!(y, A, x)
 end
 
-At_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::StridedMatrix, x::GenericSparseVector{Tx}) =
+At_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::StridedMatrix, x::AbstractSparseVector{Tx}) =
     At_mul_B!(one(Tx), A, x, zero(Ty), y)
 
-function At_mul_B!(α::Number, A::StridedMatrix, x::GenericSparseVector, β::Number, y::StridedVector)
+function At_mul_B!(α::Number, A::StridedMatrix, x::AbstractSparseVector, β::Number, y::StridedVector)
     m, n = size(A)
     length(x) == m && length(y) == n || throw(DimensionMismatch())
     n == 0 && return y
 
-    nzind = x.nzind
-    nzval = x.nzval
+    nzind = nonzeroinds(x)
+    nzval = nonzeros(x)
 
     if β != one(β)
         β == zero(β) ? fill!(y, zero(eltype(y))) : scale!(y, β)

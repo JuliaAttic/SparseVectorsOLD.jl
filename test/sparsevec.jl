@@ -1,7 +1,7 @@
 using Base.Test
 using SparseVectors
 
-import SparseVectors: GenericSparseVector, exact_equal
+import SparseVectors: exact_equal
 
 # construction
 
