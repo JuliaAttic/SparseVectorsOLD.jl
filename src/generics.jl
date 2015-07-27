@@ -55,6 +55,25 @@ function exact_equal(x::AbstractSparseVector, y::AbstractSparseVector)
     nonzeros(x) == nonzeros(y)
 end
 
+### Conversion to matrix
+
+function convert{TvD,TiD,Tv,Ti}(::Type{SparseMatrixCSC{TvD,TiD}}, x::AbstractSparseVector{Tv,Ti})
+    n = length(x)
+    xnzind = nonzeroinds(x)
+    xnzval = nonzeros(x)
+    m = length(xnzind)
+    colptr = TiD[1, m+1]
+    rowval = _copy_convert(TiD, xnzind)
+    nzval = _copy_convert(TvD, xnzval)
+    SparseMatrixCSC(n, 1, colptr, rowval, nzval)
+end
+
+convert{TvD,Tv,Ti}(::Type{SparseMatrixCSC{TvD}}, x::AbstractSparseVector{Tv,Ti}) =
+    convert(SparseMatrixCSC{TvD,Ti}, x)
+
+convert{Tv,Ti}(::Type{SparseMatrixCSC}, x::AbstractSparseVector{Tv,Ti}) =
+    convert(SparseMatrixCSC{Tv,Ti}, x)
+
 
 ### Array manipulation
 

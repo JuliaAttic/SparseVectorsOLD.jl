@@ -201,6 +201,14 @@ xc = convert(SparseVector{Float32}, x)
 @test isa(xc, SparseVector{Float32,Int})
 @test exact_equal(xc, xf32)
 
+xm = convert(SparseMatrixCSC, x)
+@test isa(xm, SparseMatrixCSC{Float64,Int})
+@test full(xm) == reshape(x_full, 8, 1)
+
+xm = convert(SparseMatrixCSC{Float32}, x)
+@test isa(xm, SparseMatrixCSC{Float32,Int})
+@test full(xm) == reshape(convert(Vector{Float32}, x_full), 8, 1)
+
 
 ### Arithmetics
 

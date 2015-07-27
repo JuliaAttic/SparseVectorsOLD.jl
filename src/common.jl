@@ -1,5 +1,8 @@
 # not exported, used mainly for testing
 
+_copy_convert{T}(::Type{T}, x::AbstractVector{T}) = copy(x)
+_copy_convert{R,T}(::Type{R}, x::AbstractVector{T}) = convert(Vector{R}, x)
+
 abstract UnaryOp
 
 immutable RealOp <: UnaryOp end
