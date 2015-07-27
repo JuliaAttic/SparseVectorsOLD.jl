@@ -8,5 +8,8 @@ _eval(::AddOp, x::Number, y::Number) = x + y
 immutable SubOp <: BinaryOp end
 _eval(::SubOp, x::Number, y::Number) = x - y
 
+immutable MulOp <: BinaryOp end
+_eval(::MulOp, x::Number, y::Number) = x * y
+
 immutable ComplexOp <: BinaryOp end
 _eval(::ComplexOp, x::Real, y::Real) = complex(x, y)

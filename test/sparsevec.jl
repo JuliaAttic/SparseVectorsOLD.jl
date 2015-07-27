@@ -204,6 +204,10 @@ xc = convert(SparseVector{Float32}, x)
 
 ### Arithmetics
 
+# negate
+
+@test exact_equal(-x, SparseVector(8, [2, 5, 6], [-1.25, 0.75, -3.5]))
+
 # abs and abs2
 
 @test exact_equal(abs(x), SparseVector(8, [2, 5, 6], abs([1.25, -0.75, 3.5])))
@@ -215,16 +219,29 @@ xa = SparseVector(8, [1,2,5,6,7], [3.25,5.25,-0.75,-2.0,-6.0])
 
 @test exact_equal(x + x, x * 2)
 @test exact_equal(x + x2, xa)
+@test exact_equal(x2 + x, xa)
 
 xb = SparseVector(8, [1,2,5,6,7], [-3.25,-2.75,-0.75,9.0,6.0])
 
 @test exact_equal(x - x, SparseVector(8, Int[], Float64[]))
 @test exact_equal(x - x2, xb)
+@test exact_equal(x2 - x, -xb)
 
 @test full(x) + x2 == full(xa)
 @test full(x) - x2 == full(xb)
 @test x + full(x2) == full(xa)
 @test x - full(x2) == full(xb)
+
+# multiplies
+
+xm = SparseVector(8, [2, 6], [5.0, -19.25])
+
+@test exact_equal(x .* x, abs2(x))
+@test exact_equal(x .* x2, xm)
+@test exact_equal(x2 .* x, xm)
+
+@test full(x) .* x2 == full(xm)
+@test x .* full(x2) == full(xm)
 
 
 ### Reduction
