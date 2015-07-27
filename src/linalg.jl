@@ -3,7 +3,7 @@
 
 # axpy
 
-function Base.LinAlg.axpy!(a::Number, x::GenericSparseVector, y::StridedVector)
+function LinAlg.axpy!(a::Number, x::GenericSparseVector, y::StridedVector)
     length(x) == length(y) || throw(DimensionMismatch())
 
     nzind = x.nzind
@@ -35,14 +35,14 @@ end
 
 # scale
 
-Base.scale!(x::GenericSparseVector, a::Number) = (scale!(x.nzval, a); x)
+scale!(x::GenericSparseVector, a::Number) = (scale!(x.nzval, a); x)
 
-Base.scale!(a::Number, x::GenericSparseVector) = scale!(x, a)
+scale!(a::Number, x::GenericSparseVector) = scale!(x, a)
 
-Base.scale{T<:Number,S<:Number}(x::GenericSparseVector{T}, a::S) =
+scale{T<:Number,S<:Number}(x::GenericSparseVector{T}, a::S) =
     SparseVector(x.n, copy(x.nzind), scale(x.nzval, a))
 
-Base.scale(a::Number, x::GenericSparseVector) = scale(x, a)
+scale(a::Number, x::GenericSparseVector) = scale(x, a)
 
 *(x::GenericSparseVector, a::Number) = scale(x, a)
 *(a::Number, x::GenericSparseVector) = scale(x, a)
@@ -52,7 +52,7 @@ Base.scale(a::Number, x::GenericSparseVector) = scale(x, a)
 
 # dot
 
-function Base.dot{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::GenericSparseVector{Ty})
+function dot{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::GenericSparseVector{Ty})
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
     nzind = y.nzind
@@ -64,9 +64,9 @@ function Base.dot{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::GenericSparseVecto
     return s
 end
 
-Base.dot{Tx<:Real,Ty<:Real}(x::GenericSparseVector{Tx}, y::StridedVector{Ty}) = dot(y, x)
+dot{Tx<:Real,Ty<:Real}(x::GenericSparseVector{Tx}, y::StridedVector{Ty}) = dot(y, x)
 
-function Base.dot{Tx<:Real,Ty<:Real}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
+function dot{Tx<:Real,Ty<:Real}(x::GenericSparseVector{Tx}, y::GenericSparseVector{Ty})
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
 
@@ -107,10 +107,10 @@ function *{Ta,Tx}(A::StridedMatrix{Ta}, x::GenericSparseVector{Tx})
     A_mul_B!(y, A, x)
 end
 
-Base.A_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::StridedMatrix, x::GenericSparseVector{Tx}) =
+A_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::StridedMatrix, x::GenericSparseVector{Tx}) =
     A_mul_B!(one(Tx), A, x, zero(Ty), y)
 
-function Base.A_mul_B!(α::Number, A::StridedMatrix, x::GenericSparseVector, β::Number, y::StridedVector)
+function A_mul_B!(α::Number, A::StridedMatrix, x::GenericSparseVector, β::Number, y::StridedVector)
     m, n = size(A)
     length(x) == n && length(y) == m || throw(DimensionMismatch())
     m == 0 && return y
@@ -132,7 +132,7 @@ function Base.A_mul_B!(α::Number, A::StridedMatrix, x::GenericSparseVector, β:
     return y
 end
 
-function Base.At_mul_B{Ta,Tx}(A::StridedMatrix{Ta}, x::GenericSparseVector{Tx})
+function At_mul_B{Ta,Tx}(A::StridedMatrix{Ta}, x::GenericSparseVector{Tx})
     m, n = size(A)
     length(x) == m || throw(DimensionMismatch())
     Ty = promote_type(Ta, Tx)
@@ -140,10 +140,10 @@ function Base.At_mul_B{Ta,Tx}(A::StridedMatrix{Ta}, x::GenericSparseVector{Tx})
     At_mul_B!(y, A, x)
 end
 
-Base.At_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::StridedMatrix, x::GenericSparseVector{Tx}) =
+At_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::StridedMatrix, x::GenericSparseVector{Tx}) =
     At_mul_B!(one(Tx), A, x, zero(Ty), y)
 
-function Base.At_mul_B!(α::Number, A::StridedMatrix, x::GenericSparseVector, β::Number, y::StridedVector)
+function At_mul_B!(α::Number, A::StridedMatrix, x::GenericSparseVector, β::Number, y::StridedVector)
     m, n = size(A)
     length(x) == m && length(y) == n || throw(DimensionMismatch())
     n == 0 && return y
