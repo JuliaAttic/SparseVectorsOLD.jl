@@ -7,19 +7,20 @@ function _unarymap_selectnz{Tv,Ti<:Integer}(f::UnaryOp, x::AbstractSparseVector{
     xnzval = nonzeros(x)
     m = length(xnzind)
 
-    ynzind = Ti[]
-    ynzval = R[]
-    sizehint!(ynzind, m)
-    sizehint!(ynzval, m)
-
+    ynzind = Array(Ti, m)
+    ynzval = Array(R, m)
+    ir = 0
     @inbounds for j = 1:m
         i = xnzind[j]
         v = _eval(f, xnzval[j])
         if v != zero(v)
-            push!(ynzind, i)
-            push!(ynzval, v)
+            ir += 1
+            ynzind[ir] = i
+            ynzval[ir] = v
         end
     end
+    resize!(ynzind, ir)
+    resize!(ynzval, ir)
     SparseVector(length(x), ynzind, ynzval)
 end
 
