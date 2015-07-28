@@ -8,7 +8,7 @@ import Base:
     showarray, show, writemime,
     convert, full, vec, copy, reinterpret,
     float, complex, real, imag,
-    abs, abs2, 
+    abs, abs2,
     sum, sumabs, sumabs2, vecnorm,
     sprand, sprandn, scale, scale!, dot,
     A_mul_B!, At_mul_B, At_mul_B!
@@ -19,18 +19,17 @@ import ArrayViews: view
 import Base.LinAlg: axpy!
 
 export
-
     # reexport
     view, axpy!,
 
-    # sparsevec
-    SparseVector, SparseVectorView,
+    # types
+    SparseVector,
+    SparseVectorView,
+
+    # functions
     nonzeroinds,
-
-    # sparsematview
+    sparsevector,
     unsafe_colrange,
-
-    # linalg
     sparsemv_to_dense
 
 # sources

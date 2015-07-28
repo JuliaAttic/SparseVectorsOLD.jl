@@ -32,14 +32,13 @@ SparseVector(n::Integer) = SparseVector(n, Int[], Float64[])
 SparseVector{Tv}(::Type{Tv}, n::Integer) = SparseVector(n, Int[], Tv[])
 SparseVector{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer) = SparseVector(n, Ti[], Tv[])
 
-# make SparseVector from an iterable collection of (ind, value), e.g. dictionary
-function _make_sparsevec{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer, iter, checkrep::Bool)
-    m = length(iter)
+function sparsevector{Tv,Ti<:Integer}(n::Integer, dict::Associative{Ti,Tv})
+    m = length(dict)
     nzind = Array(Ti, m)
     nzval = Array(Tv, m)
 
     cnt = 0
-    for (k, v) in iter
+    for (k, v) in dict
         if v != zero(v)
             cnt += 1
             nzind[cnt] = k
@@ -51,21 +50,11 @@ function _make_sparsevec{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer, ite
 
     p = sortperm(nzind)
     permute!(nzind, p)
-    if checkrep
-        for i = 1:length(nzind)-1
-            nzind[i] != nzind[i+1] || error("Repeated indices.")
-        end
-    end
     permute!(nzval, p)
-
     return SparseVector{Tv,Ti}(convert(Int, n), nzind, nzval)
 end
 
-SparseVector{Tv,Ti<:Integer}(n::Integer, s::Associative{Ti,Tv}) =
-    _make_sparsevec(Tv, Ti, n, s, false)
 
-SparseVector{Tv,Ti}(n::Integer, s::AbstractVector{@compat(Tuple{Ti,Tv})}) =
-    _make_sparsevec(Tv, Ti, n, s, true)
 
 
 ### Element access

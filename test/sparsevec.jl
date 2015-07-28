@@ -42,6 +42,18 @@ x2 = view(_x2)
 @test nonzeroinds(x2) == [1, 2, 6, 7]
 @test nonzeros(x2) == [3.25, 4.0, -5.5, -6.0]
 
+# full
+
+x_full = zeros(length(x))
+x_full[nonzeroinds(x)] = nonzeros(x)
+@test isa(full(x), Vector{Float64})
+@test full(x) == x_full
+
+x2_full = zeros(length(x2))
+x2_full[nonzeroinds(x2)] = nonzeros(x2)
+@test isa(full(x2), Vector{Float64})
+@test full(x2) == x2_full
+
 
 ### Show
 
@@ -84,20 +96,16 @@ xr = sprandn(1000, 0.3)
 @test length(xr) == 1000
 @test any(nonzeros(xr) .> 0.0) && any(nonzeros(xr) .< 0.0)
 
+dct = Dict{Int,Float64}()
+for i in nonzeroinds(x)
+    dct[i] = x_full[i]
+end
+xc = sparsevector(8, dct)
+@test isa(xc, SparseVector{Float64,Int})
+@test exact_equal(x, xc)
+
 
 ### Element access
-
-# full
-
-x_full = zeros(length(x))
-x_full[nonzeroinds(x)] = nonzeros(x)
-@test isa(full(x), Vector{Float64})
-@test full(x) == x_full
-
-x2_full = zeros(length(x2))
-x2_full[nonzeroinds(x2)] = nonzeros(x2)
-@test isa(full(x2), Vector{Float64})
-@test full(x2) == x2_full
 
 # getindex
 
@@ -176,19 +184,6 @@ x_from_mat = convert(SparseVector,
 @test exact_equal(x_from_mat, x)
 
 xc = convert(SparseVector, x_full)
-@test isa(xc, SparseVector{Float64,Int})
-@test exact_equal(x, xc)
-
-dct = Dict{Int,Float64}()
-for i in nonzeroinds(x)
-    dct[i] = x_full[i]
-end
-xc = SparseVector(8, dct)
-@test isa(xc, SparseVector{Float64,Int})
-@test exact_equal(x, xc)
-
-ps = [(5, -0.75), (2, 1.25), (6, 3.5)]
-xc = SparseVector(8, ps)
 @test isa(xc, SparseVector{Float64,Int})
 @test exact_equal(x, xc)
 
