@@ -69,34 +69,37 @@ end
 
 dot{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::AbstractVector{Ty}) = dot(y, x)
 
+function _spdot(xj::Int, xj_last::Int, xnzind, xnzval,
+                yj::Int, yj_last::Int, ynzind, ynzval)
+    # dot product between ranges of non-zeros,
+    s = zero(eltype(xnzval)) * zero(eltype(ynzval))
+    @inbounds while xj <= xj_last && yj <= yj_last
+        ix = xnzind[xj]
+        iy = ynzind[yj]
+        if ix == iy
+            s += xnzval[xj] * ynzval[yj]
+            xj += 1
+            yj += 1
+        elseif ix < iy
+            xj += 1
+        else
+            yj += 1
+        end
+    end
+    s
+end
+
 function dot{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::AbstractSparseVector{Ty})
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
 
     xnzind = nonzeroinds(x)
-    xnzval = nonzeros(x)
     ynzind = nonzeroinds(y)
+    xnzval = nonzeros(x)
     ynzval = nonzeros(y)
-    mx = length(xnzind)
-    my = length(ynzind)
 
-    ix = 1
-    iy = 1
-    s = zero(Tx) * zero(Ty)
-    @inbounds while ix <= mx && iy <= my
-        jx = xnzind[ix]
-        jy = ynzind[iy]
-        if jx == jy
-            s += xnzval[ix] * ynzval[iy]
-            ix += 1
-            iy += 1
-        elseif jx < jy
-            ix += 1
-        else
-            iy += 1
-        end
-    end
-    return s
+    _spdot(1, length(xnzind), xnzind, xnzval,
+           1, length(ynzind), ynzind, ynzval)
 end
 
 
@@ -248,29 +251,11 @@ function At_mul_B!{Tx,Ty}(α::Number, A::SparseMatrixCSC, x::AbstractSparseVecto
     Anzval = A.nzval
     mx = length(xnzind)
 
-    s0 = zero(eltype(A)) * zero(eltype(x))
-    @inbounds for j = 1:n
+    for j = 1:n
         # s <- dot(A[:,j], x)
-        s = zero(s0)
-        ia = Acolptr[j]
-        ix = 1
-        last_ia = Acolptr[j+1]-1
-        while ia <= last_ia && ix <= mx
-            ra = Arowval[ia]
-            rx = xnzind[ix]
-            if ra == rx
-                s += Anzval[ia] * xnzval[ix]
-                ia += 1
-                ix += 1
-            elseif ra < rx
-                ia += 1
-            else
-                ix += 1
-            end
-        end
-
-        # update s * α to y
-        y[j] += s * α
+        s = _spdot(Acolptr[j], Acolptr[j+1]-1, Arowval, Anzval,
+                   1, mx, xnzind, xnzval)
+        @inbounds y[j] += s * α
     end
     return y
 end
