@@ -3,7 +3,7 @@
 _copy_convert{T}(::Type{T}, x::Vector{T}) = copy(x)
 _copy_convert{R,T}(::Type{R}, x::AbstractVector{T}) = convert(Vector{R}, x)
 
-import Base: Func, AddFun, MulFun
+import Base: Func, AddFun, MulFun, MaxFun, MinFun
 
 if VERSION < v"0.4-dev"
     call(f::Function, x) = f(x)

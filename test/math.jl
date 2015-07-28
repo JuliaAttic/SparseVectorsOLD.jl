@@ -1,6 +1,7 @@
 using SparseVectors
 using Base.Test
 
+import SparseVectors: exact_equal
 
 ### Data
 
@@ -50,6 +51,14 @@ let x = spv_x1, x2 = spv_x2
 
     @test full(x) .* x2 == full(xm)
     @test x .* full(x2) == full(xm)
+
+    # max & min
+    @test exact_equal(max(x, x), x)
+    @test exact_equal(min(x, x), x)
+    @test exact_equal(max(x, x2),
+        SparseVector(8, Int[1, 2, 6], Float64[3.25, 4.0, 3.5]))
+    @test exact_equal(min(x, x2),
+        SparseVector(8, Int[2, 5, 6, 7], Float64[1.25, -0.75, -5.5, -6.0]))
 end
 
 ### Complex

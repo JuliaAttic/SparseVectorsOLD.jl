@@ -7,12 +7,12 @@ import Base:
     showarray, show, writemime,
     convert, full, vec, copy, reinterpret, float, complex,
     scale, scale!, dot, vecnorm,
-    sum, sumabs, sumabs2, maximum, minimum, maxabs, minabs, 
+    sum, sumabs, sumabs2, maximum, minimum, maxabs, minabs,
     sparse, sprand, sprandn,
     A_mul_B!, At_mul_B, At_mul_B!
 
 import Base:
-    +, .+, -, .-, *, .*,
+    +, .+, -, .-, *, .*, max, min,
     abs, abs2, conj, real, imag,
     floor, ceil, trunc, round,
     exp, exp2, exp10, log, log2, log10,

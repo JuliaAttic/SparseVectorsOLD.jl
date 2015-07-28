@@ -92,13 +92,14 @@ end
 # mode:
 # 0: f(nz, nz) -> nz, f(z, nz) -> z, f(nz, z) ->  z
 # 1: f(nz, nz) -> z/nz, f(z, nz) -> nz, f(nz, z) -> nz
+# 2: f(nz, nz) -> z/nz, f(z, nz) -> z/nz, f(nz, z) -> z/nz
 
 function _binarymap{Tx,Ty}(f::BinaryOp,
                            x::AbstractSparseVector{Tx},
                            y::AbstractSparseVector{Ty},
                            mode::Int)
 
-    0 <= mode <= 1 || throw(ArgumentError("Incorrect mode $mode."))
+    0 <= mode <= 2 || throw(ArgumentError("Incorrect mode $mode."))
     R = typeof(call(f, zero(Tx), zero(Ty)))
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
@@ -118,71 +119,122 @@ function _binarymap{Tx,Ty}(f::BinaryOp,
     ix = 1
     iy = 1
 
-    if mode == 0
-        @inbounds while ix <= mx && iy <= my
-            jx = xnzind[ix]
-            jy = ynzind[iy]
-            if jx == jy
-                v = call(f, xnzval[ix], ynzval[iy])
-                ir += 1
-                rind[ir] = jx
-                rval[ir] = v
-                ix += 1
-                iy += 1
-            elseif jx < jy
-                ix += 1
-            else
-                iy += 1
-            end
-
-        end
-
-    else # mode == 1
-        @inbounds while ix <= mx && iy <= my
-            jx = xnzind[ix]
-            jy = ynzind[iy]
-            if jx == jy
-                v = call(f, xnzval[ix], ynzval[iy])
-                if v != zero(v)
-                    ir += 1
-                    rind[ir] = jx
-                    rval[ir] = v
-                end
-                ix += 1
-                iy += 1
-            elseif jx < jy
-                v = call(f, xnzval[ix], zero(Ty))
-                ir += 1
-                rind[ir] = jx
-                rval[ir] = v
-                ix += 1
-            else
-                v = call(f, zero(Tx), ynzval[iy])
-                ir += 1
-                rind[ir] = jy
-                rval[ir] = v
-                iy += 1
-            end
-        end
-        @inbounds while ix <= mx
-            v = call(f, xnzval[ix], zero(Ty))
-            ir += 1
-            rind[ir] = xnzind[ix]
-            rval[ir] = v
-            ix += 1
-        end
-        @inbounds while iy <= my
-            v = call(f, zero(Tx), ynzval[iy])
-            ir += 1
-            rind[ir] = ynzind[iy]
-            rval[ir] = v
-            iy += 1
-        end
-    end
+    ir = (
+        mode == 0 ? _binarymap_mode_0!(f, mx, my,
+            xnzind, xnzval, ynzind, ynzval, rind, rval) :
+        mode == 1 ? _binarymap_mode_1!(f, mx, my,
+            xnzind, xnzval, ynzind, ynzval, rind, rval) :
+        _binarymap_mode_2!(f, mx, my,
+            xnzind, xnzval, ynzind, ynzval, rind, rval)
+    )::Int
 
     resize!(rind, ir)
     resize!(rval, ir)
     return SparseVector(n, rind, rval)
+end
+
+function _binarymap_mode_0!(f::BinaryOp, mx::Int, my::Int,
+                            xnzind, xnzval, ynzind, ynzval, rind, rval)
+    # f(nz, nz) -> nz, f(z, nz) -> z, f(nz, z) ->  z
+    ir = 0; ix = 1; iy = 1
+    @inbounds while ix <= mx && iy <= my
+        jx = xnzind[ix]
+        jy = ynzind[iy]
+        if jx == jy
+            v = call(f, xnzval[ix], ynzval[iy])
+            ir += 1; rind[ir] = jx; rval[ir] = v
+            ix += 1; iy += 1
+        elseif jx < jy
+            ix += 1
+        else
+            iy += 1
+        end
+    end
+    return ir
+end
+
+function _binarymap_mode_1!{Tx,Ty}(f::BinaryOp, mx::Int, my::Int,
+                                   xnzind, xnzval::AbstractVector{Tx},
+                                   ynzind, ynzval::AbstractVector{Ty},
+                                   rind, rval)
+    # f(nz, nz) -> z/nz, f(z, nz) -> nz, f(nz, z) -> nz
+    ir = 0; ix = 1; iy = 1
+    @inbounds while ix <= mx && iy <= my
+        jx = xnzind[ix]
+        jy = ynzind[iy]
+        if jx == jy
+            v = call(f, xnzval[ix], ynzval[iy])
+            if v != zero(v)
+                ir += 1; rind[ir] = jx; rval[ir] = v
+            end
+            ix += 1; iy += 1
+        elseif jx < jy
+            v = call(f, xnzval[ix], zero(Ty))
+            ir += 1; rind[ir] = jx; rval[ir] = v
+            ix += 1
+        else
+            v = call(f, zero(Tx), ynzval[iy])
+            ir += 1; rind[ir] = jy; rval[ir] = v
+            iy += 1
+        end
+    end
+    @inbounds while ix <= mx
+        v = call(f, xnzval[ix], zero(Ty))
+        ir += 1; rind[ir] = xnzind[ix]; rval[ir] = v
+        ix += 1
+    end
+    @inbounds while iy <= my
+        v = call(f, zero(Tx), ynzval[iy])
+        ir += 1; rind[ir] = ynzind[iy]; rval[ir] = v
+        iy += 1
+    end
+    return ir
+end
+
+function _binarymap_mode_2!{Tx,Ty}(f::BinaryOp, mx::Int, my::Int,
+                                   xnzind, xnzval::AbstractVector{Tx},
+                                   ynzind, ynzval::AbstractVector{Ty},
+                                   rind, rval)
+    # f(nz, nz) -> z/nz, f(z, nz) -> z/nz, f(nz, z) -> z/nz
+    ir = 0; ix = 1; iy = 1
+    @inbounds while ix <= mx && iy <= my
+        jx = xnzind[ix]
+        jy = ynzind[iy]
+        if jx == jy
+            v = call(f, xnzval[ix], ynzval[iy])
+            if v != zero(v)
+                ir += 1; rind[ir] = jx; rval[ir] = v
+            end
+            ix += 1; iy += 1
+        elseif jx < jy
+            v = call(f, xnzval[ix], zero(Ty))
+            if v != zero(v)
+                ir += 1; rind[ir] = jx; rval[ir] = v
+            end
+            ix += 1
+        else
+            v = call(f, zero(Tx), ynzval[iy])
+            if v != zero(v)
+                ir += 1; rind[ir] = jy; rval[ir] = v
+            end
+            iy += 1
+        end
+    end
+    @inbounds while ix <= mx
+        v = call(f, xnzval[ix], zero(Ty))
+        if v != zero(v)
+            ir += 1; rind[ir] = xnzind[ix]; rval[ir] = v
+        end
+        ix += 1
+    end
+    @inbounds while iy <= my
+        v = call(f, zero(Tx), ynzval[iy])
+        if v != zero(v)
+            ir += 1; rind[ir] = ynzind[iy]; rval[ir] = v
+        end
+        iy += 1
+    end
+    return ir
 end
 
 function _binarymap{Tx,Ty}(f::BinaryOp,
@@ -190,7 +242,7 @@ function _binarymap{Tx,Ty}(f::BinaryOp,
                            y::AbstractSparseVector{Ty},
                            mode::Int)
 
-    0 <= mode <= 1 || throw(ArgumentError("Incorrect mode $mode."))
+    0 <= mode <= 2 || throw(ArgumentError("Incorrect mode $mode."))
     R = typeof(call(f, zero(Tx), zero(Ty)))
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
@@ -205,30 +257,24 @@ function _binarymap{Tx,Ty}(f::BinaryOp,
         @inbounds for i = 1:m
             j = ynzind[i]
             while ii < j
-                dst[ii] = zero(R)
-                ii += 1
+                dst[ii] = zero(R); ii += 1
             end
-            dst[j] = call(f, x[j], ynzval[i])
-            ii += 1
+            dst[j] = call(f, x[j], ynzval[i]); ii += 1
         end
         @inbounds while ii <= n
-            dst[ii] = zero(R)
-            ii += 1
+            dst[ii] = zero(R); ii += 1
         end
-    else # mode == 1
+    else # mode >= 1
         ii = 1
         @inbounds for i = 1:m
             j = ynzind[i]
             while ii < j
-                dst[ii] = call(f, x[ii], zero(Ty))
-                ii += 1
+                dst[ii] = call(f, x[ii], zero(Ty)); ii += 1
             end
-            dst[j] = call(f, x[j], ynzval[i])
-            ii += 1
+            dst[j] = call(f, x[j], ynzval[i]); ii += 1
         end
         @inbounds while ii <= n
-            dst[ii] = call(f, x[ii], zero(Ty))
-            ii += 1
+            dst[ii] = call(f, x[ii], zero(Ty)); ii += 1
         end
     end
     return dst
@@ -239,7 +285,7 @@ function _binarymap{Tx,Ty}(f::BinaryOp,
                            y::AbstractVector{Ty},
                            mode::Int)
 
-    0 <= mode <= 1 || throw(ArgumentError("Incorrect mode $mode."))
+    0 <= mode <= 2 || throw(ArgumentError("Incorrect mode $mode."))
     R = typeof(call(f, zero(Tx), zero(Ty)))
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
@@ -254,30 +300,24 @@ function _binarymap{Tx,Ty}(f::BinaryOp,
         @inbounds for i = 1:m
             j = xnzind[i]
             while ii < j
-                dst[ii] = zero(R)
-                ii += 1
+                dst[ii] = zero(R); ii += 1
             end
-            dst[j] = call(f, xnzval[i], y[j])
-            ii += 1
+            dst[j] = call(f, xnzval[i], y[j]); ii += 1
         end
         @inbounds while ii <= n
-            dst[ii] = zero(R)
-            ii += 1
+            dst[ii] = zero(R); ii += 1
         end
-    else # mode == 1
+    else # mode >= 1
         ii = 1
         @inbounds for i = 1:m
             j = xnzind[i]
             while ii < j
-                dst[ii] = call(f, zero(Tx), y[ii])
-                ii += 1
+                dst[ii] = call(f, zero(Tx), y[ii]); ii += 1
             end
-            dst[j] = call(f, xnzval[i], y[j])
-            ii += 1
+            dst[j] = call(f, xnzval[i], y[j]); ii += 1
         end
         @inbounds while ii <= n
-            dst[ii] = call(f, zero(Tx), y[ii])
-            ii += 1
+            dst[ii] = call(f, zero(Tx), y[ii]); ii += 1
         end
     end
     return dst
@@ -286,17 +326,15 @@ end
 
 ### Binary arithmetics: +, -, *
 
-_vadd(x::AbstractSparseVector, y::AbstractSparseVector) = _binarymap(AddFun(), x, y, 1)
-_vsub(x::AbstractSparseVector, y::AbstractSparseVector) = _binarymap(SubFun(), x, y, 1)
-_vmul(x::AbstractSparseVector, y::AbstractSparseVector) = _binarymap(MulFun(), x, y, 0)
-
-_vadd(x::StridedVector, y::AbstractSparseVector) = _binarymap(AddFun(), x, y, 1)
-_vsub(x::StridedVector, y::AbstractSparseVector) = _binarymap(SubFun(), x, y, 1)
-_vmul(x::StridedVector, y::AbstractSparseVector) = _binarymap(MulFun(), x, y, 0)
-
-_vadd(x::AbstractSparseVector, y::StridedVector) = _binarymap(AddFun(), x, y, 1)
-_vsub(x::AbstractSparseVector, y::StridedVector) = _binarymap(SubFun(), x, y, 1)
-_vmul(x::AbstractSparseVector, y::StridedVector) = _binarymap(MulFun(), x, y, 0)
+for (vop, fun, mode) in [(:_vadd, :AddFun, 1),
+                         (:_vsub, :SubFun, 1),
+                         (:_vmul, :MulFun, 0)]
+    @eval begin
+        $(vop)(x::AbstractSparseVector, y::AbstractSparseVector) = _binarymap($(fun)(), x, y, $mode)
+        $(vop)(x::StridedVector, y::AbstractSparseVector) = _binarymap($(fun)(), x, y, $mode)
+        $(vop)(x::AbstractSparseVector, y::StridedVector) = _binarymap($(fun)(), x, y, $mode)
+    end
+end
 
 # to workaround the ambiguities with vectorized dates/arithmetic.jl functions
 if VERSION > v"0.4-dev"
@@ -312,34 +350,30 @@ end
 
 # definition of operators
 
-+(x::AbstractSparseVector, y::AbstractSparseVector) = _vadd(x, y)
--(x::AbstractSparseVector, y::AbstractSparseVector) = _vsub(x, y)
-+(x::StridedVector, y::AbstractSparseVector) = _vadd(x, y)
--(x::StridedVector, y::AbstractSparseVector) = _vsub(x, y)
-+(x::AbstractSparseVector, y::StridedVector) = _vadd(x, y)
--(x::AbstractSparseVector, y::StridedVector) = _vsub(x, y)
+for (op, vop) in [(:+, :_vadd), (:(.+), :_vadd),
+                  (:-, :_vsub), (:(.-), :_vsub),
+                  (:.*, :_vmul)]
+    @eval begin
+        $(op)(x::AbstractSparseVector, y::AbstractSparseVector) = $(vop)(x, y)
+        $(op)(x::StridedVector, y::AbstractSparseVector) = $(vop)(x, y)
+        $(op)(x::AbstractSparseVector, y::StridedVector) = $(vop)(x, y)
+    end
+end
 
-.+(x::AbstractSparseVector, y::AbstractSparseVector) = _vadd(x, y)
-.-(x::AbstractSparseVector, y::AbstractSparseVector) = _vsub(x, y)
-.*(x::AbstractSparseVector, y::AbstractSparseVector) = _vmul(x, y)
+# definition of other binary functions
 
-.+(x::StridedVector, y::AbstractSparseVector) = _vadd(x, y)
-.-(x::StridedVector, y::AbstractSparseVector) = _vsub(x, y)
-.*(x::StridedVector, y::AbstractSparseVector) = _vmul(x, y)
-
-.+(x::AbstractSparseVector, y::StridedVector) = _vadd(x, y)
-.-(x::AbstractSparseVector, y::StridedVector) = _vsub(x, y)
-.*(x::AbstractSparseVector, y::StridedVector) = _vmul(x, y)
-
-# complex
-
-complex{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::AbstractSparseVector{Ty}) =
-    _binarymap(ComplexFun(), x, y, 1)
-complex{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::AbstractSparseVector{Ty}) =
-    _binarymap(ComplexFun(), x, y, 1)
-complex{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::StridedVector{Ty}) =
-    _binarymap(ComplexFun(), x, y, 1)
-
+for (op, fun, TF, mode) in [(:max, :MaxFun, :Real, 2),
+                            (:min, :MinFun, :Real, 2),
+                            (:complex, :ComplexFun, :Real, 1)]
+    @eval begin
+        $(op){Tx<:$(TF),Ty<:$(TF)}(x::AbstractSparseVector{Tx}, y::AbstractSparseVector{Ty}) =
+            _binarymap($(fun)(), x, y, $mode)
+        $(op){Tx<:$(TF),Ty<:$(TF)}(x::StridedVector{Tx}, y::AbstractSparseVector{Ty}) =
+            _binarymap($(fun)(), x, y, $mode)
+        $(op){Tx<:$(TF),Ty<:$(TF)}(x::AbstractSparseVector{Tx}, y::StridedVector{Ty}) =
+            _binarymap($(fun)(), x, y, $mode)
+    end
+end
 
 ### Reduction
 
