@@ -263,6 +263,12 @@ end
 
 ### BLAS-2 / sparse A * sparse x -> dense y
 
+function *(A::SparseMatrixCSC, x::AbstractSparseVector)
+    y = sparsemv_to_dense(A, x)
+    initcap = min(nnz(A), size(A,1))
+    _dense2sparsevec(y, initcap)
+end
+
 function At_mul_B{TvA,TiA,TvX,TiX}(A::SparseMatrixCSC{TvA,TiA}, x::AbstractSparseVector{TvX,TiX})
     m, n = size(A)
     length(x) == m || throw(DimensionMismatch())

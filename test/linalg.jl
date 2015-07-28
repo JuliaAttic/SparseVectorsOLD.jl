@@ -102,15 +102,17 @@ end
 
 ## sparse A * sparse x -> sparse y
 
+let A = sprandn(9, 16, 0.5), x = sprand(16, 0.7)
+    Af = full(A)
+    xf = full(x)
+    y = A * x
+    @test isa(y, SparseVector{Float64,Int})
+    @test_approx_eq full(y) Af * xf
+end
+
 let A = sprandn(16, 9, 0.5), x = sprand(16, 0.7)
     Af = full(A)
     xf = full(x)
-    for α in [0.0, 1.0, 2.0], β in [0.0, 0.5, 1.0]
-        y = rand(9)
-        rr = α * Af'xf + β * y
-        @test is(At_mul_B!(α, A, x, β, y), y)
-        @test_approx_eq y rr
-    end
     y = At_mul_B(A, x)
     @test isa(y, SparseVector{Float64,Int})
     @test all(nonzeros(y) .!= 0.0)

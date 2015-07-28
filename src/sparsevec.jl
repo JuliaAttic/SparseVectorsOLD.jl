@@ -226,19 +226,36 @@ convert{Tv,Ti}(::Type{SparseVector}, s::SparseMatrixCSC{Tv,Ti}) =
     convert(SparseVector{Tv,Ti}, s)
 
 # convert Vector to SparseVector
-function convert{Tv}(::Type{SparseVector{Tv,Int}}, s::Vector{Tv})
+
+function _dense2sparsevec{Tv}(s::Vector{Tv}, initcap::Int)
+    # pre-condition: initcap > 0
     n = length(s)
-    nzind = Array(Int, 0)
-    nzval = Array(Tv, 0)
-    for i = 1:n
-        @inbounds v = s[i]
+    cap = initcap
+    nzind = Array(Int, cap)
+    nzval = Array(Tv, cap)
+    c = 0
+    @inbounds for i = 1:n
+        v = s[i]
         if v != zero(v)
-            push!(nzind, i)
-            push!(nzval, v)
+            if c < cap
+                cap *= 2
+                resize!(nzind, cap)
+                resize!(nzval, cap)
+            end
+            c += 1
+            nzind[c] = i
+            nzval[c] = v
         end
     end
-    return SparseVector(n, nzind, nzval)
+    if c < cap
+        resize!(nzind, c)
+        resize!(nzval, c)
+    end
+    SparseVector(n, nzind, nzval)
 end
+
+convert{Tv}(::Type{SparseVector{Tv,Int}}, s::Vector{Tv}) =
+    _dense2sparsevec(s, max(8, div(length(s), 8)))
 
 convert{Tv}(::Type{SparseVector{Tv}}, s::Vector{Tv}) =
     convert(SparseVector{Tv,Int}, s)
