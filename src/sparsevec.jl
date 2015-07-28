@@ -35,17 +35,19 @@ SparseVector{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer) = SparseVector(
 # make SparseVector from an iterable collection of (ind, value), e.g. dictionary
 function _make_sparsevec{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer, iter, checkrep::Bool)
     m = length(iter)
-    nzind = Array(Ti, 0)
-    nzval = Array(Tv, 0)
-    sizehint!(nzind, m)
-    sizehint!(nzval, m)
+    nzind = Array(Ti, m)
+    nzval = Array(Tv, m)
 
+    cnt = 0
     for (k, v) in iter
         if v != zero(v)
-            push!(nzind, k)
-            push!(nzval, v)
+            cnt += 1
+            nzind[cnt] = k
+            nzval[cnt] = v
         end
     end
+    resize!(nzind, cnt)
+    resize!(nzval, cnt)
 
     p = sortperm(nzind)
     permute!(nzind, p)
