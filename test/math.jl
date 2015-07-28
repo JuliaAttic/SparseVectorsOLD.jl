@@ -94,3 +94,17 @@ for f in [log1p, expm1,
           sinh, tanh, asinh, atanh]
     check_sp2sp(f, rnd_x0, rnd_x0f)
 end
+
+
+### Reduction
+
+let x = spv_x1
+    @test sum(x) == 4.0
+    @test sumabs(x) == 5.5
+    @test sumabs2(x) == 14.375
+
+    @test vecnorm(x) == sqrt(14.375)
+    @test vecnorm(x, 1) == 5.5
+    @test vecnorm(x, 2) == sqrt(14.375)
+    @test vecnorm(x, Inf) == 3.5
+end

@@ -105,12 +105,3 @@ float(x::AbstractSparseVector) =
 complex{Tv<:Complex}(x::AbstractSparseVector{Tv}) = x
 complex(x::AbstractSparseVector) =
     SparseVector(length(x), copy(nonzeroinds(x)), complex(nonzeros(x)))
-
-
-### Reduction
-
-sum(x::AbstractSparseVector) = sum(nonzeros(x))
-sumabs(x::AbstractSparseVector) = sumabs(nonzeros(x))
-sumabs2(x::AbstractSparseVector) = sumabs2(nonzeros(x))
-
-vecnorm(x::AbstractSparseVector, p::Real=2) = vecnorm(nonzeros(x), p)

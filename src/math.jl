@@ -274,7 +274,7 @@ function _binarymap{Tx,Ty}(f::BinaryOp,
 end
 
 
-### Arithmetics: +, -, *
+### Binary arithmetics: +, -, *
 
 _vadd(x::AbstractSparseVector, y::AbstractSparseVector) = _binarymap(AddFun(), x, y, 1)
 _vsub(x::AbstractSparseVector, y::AbstractSparseVector) = _binarymap(SubFun(), x, y, 1)
@@ -330,4 +330,11 @@ complex{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::AbstractSparseVector{Ty}) =
 complex{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::StridedVector{Ty}) =
     _binarymap(ComplexFun(), x, y, 1)
 
-###
+
+### Reduction
+
+sum(x::AbstractSparseVector) = sum(nonzeros(x))
+sumabs(x::AbstractSparseVector) = sumabs(nonzeros(x))
+sumabs2(x::AbstractSparseVector) = sumabs2(nonzeros(x))
+
+vecnorm(x::AbstractSparseVector, p::Real=2) = vecnorm(nonzeros(x), p)

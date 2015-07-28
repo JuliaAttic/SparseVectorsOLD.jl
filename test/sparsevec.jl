@@ -253,16 +253,3 @@ let x = spv_x1, xf = x1_full
     @test isa(xm, SparseMatrixCSC{Float32,Int})
     @test full(xm) == reshape(convert(Vector{Float32}, xf), 8, 1)
 end
-
-### Reduction
-
-let x = spv_x1
-    @test sum(x) == 4.0
-    @test sumabs(x) == 5.5
-    @test sumabs2(x) == 14.375
-
-    @test vecnorm(x) == sqrt(14.375)
-    @test vecnorm(x, 1) == 5.5
-    @test vecnorm(x, 2) == sqrt(14.375)
-    @test vecnorm(x, Inf) == 3.5
-end
