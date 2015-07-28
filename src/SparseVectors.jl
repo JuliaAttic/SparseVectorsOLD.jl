@@ -8,9 +8,9 @@ import Base:
     showarray, show, writemime,
     convert, full, vec, copy, reinterpret,
     float, complex, real, imag,
-    abs, abs2,
+    abs, abs2, scale, scale!, dot,
     sum, sumabs, sumabs2, vecnorm,
-    sprand, sprandn, scale, scale!, dot,
+    sparse, sprand, sprandn, 
     A_mul_B!, At_mul_B, At_mul_B!
 
 import Base.LinAlg

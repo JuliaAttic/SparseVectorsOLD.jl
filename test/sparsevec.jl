@@ -83,6 +83,8 @@ x0 = SparseVector(Float32, Int32, 8)
 @test length(x0) == 8
 @test nnz(x0) == 0
 
+# from list of indices and values
+
 # from dictionary
 
 dct = Dict{Int,Float64}()

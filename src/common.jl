@@ -23,5 +23,11 @@ _eval(::SubOp, x::Number, y::Number) = x - y
 immutable MulOp <: BinaryOp end
 _eval(::MulOp, x::Number, y::Number) = x * y
 
+immutable MaxOp <: BinaryOp end
+_eval(::MaxOp, x::Real, y::Real) = Base.scalarmax(x, y)
+
+immutable MinOp <: BinaryOp end
+_eval(::MinOp, x::Real, y::Real) = Base.scalarmin(x, y)
+
 immutable ComplexOp <: BinaryOp end
 _eval(::ComplexOp, x::Real, y::Real) = complex(x, y)
