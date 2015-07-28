@@ -55,19 +55,32 @@ scale(a::Complex, x::AbstractSparseVector) = scale(x, a)
 
 # dot
 
-function dot{Tx<:Real,Ty<:Real}(x::StridedVector{Tx}, y::AbstractSparseVector{Ty})
+_dot(x::Number, y::Number) = x * conj(y)
+_dot(x::Real, y::Real) = x * y
+
+function dot{Tx<:Number,Ty<:Number}(x::StridedVector{Tx}, y::AbstractSparseVector{Ty})
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
     nzind = nonzeroinds(y)
     nzval = nonzeros(y)
     s = zero(Tx) * zero(Ty)
     for i = 1:length(nzind)
-        s += x[nzind[i]] * nzval[i]
+        s += _dot(x[nzind[i]], nzval[i])
     end
     return s
 end
 
-dot{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::AbstractVector{Ty}) = dot(y, x)
+function dot{Tx<:Number,Ty<:Number}(x::AbstractSparseVector{Tx}, y::AbstractVector{Ty})
+    n = length(y)
+    length(x) == n || throw(DimensionMismatch())
+    nzind = nonzeroinds(x)
+    nzval = nonzeros(x)
+    s = zero(Tx) * zero(Ty)
+    for i = 1:length(nzind)
+        s += _dot(nzval[i], y[nzind[i]])
+    end
+    return s
+end
 
 function _spdot(xj::Int, xj_last::Int, xnzind, xnzval,
                 yj::Int, yj_last::Int, ynzind, ynzval)
@@ -77,7 +90,7 @@ function _spdot(xj::Int, xj_last::Int, xnzind, xnzval,
         ix = xnzind[xj]
         iy = ynzind[yj]
         if ix == iy
-            s += xnzval[xj] * ynzval[yj]
+            s += _dot(xnzval[xj], ynzval[yj])
             xj += 1
             yj += 1
         elseif ix < iy
@@ -89,7 +102,7 @@ function _spdot(xj::Int, xj_last::Int, xnzind, xnzval,
     s
 end
 
-function dot{Tx<:Real,Ty<:Real}(x::AbstractSparseVector{Tx}, y::AbstractSparseVector{Ty})
+function dot{Tx<:Number,Ty<:Number}(x::AbstractSparseVector{Tx}, y::AbstractSparseVector{Ty})
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
 
