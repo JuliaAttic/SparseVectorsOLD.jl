@@ -35,7 +35,7 @@ abs2(x::AbstractSparseVector) =
 real{T<:Real}(x::AbstractSparseVector{T}) = x
 real{T<:Complex}(x::AbstractSparseVector{T}) = _unarymap_selectnz(RealOp(), x)
 
-imag{Tv<:Real,Ti<:Integer}(x::AbstractSparseVector{Tv,Ti}) = SparseVector(Tv, Ti, length(x))
+imag{Tv<:Real,Ti<:Integer}(x::AbstractSparseVector{Tv,Ti}) = SparseVector(length(x), Ti[], Tv[])
 imag{T<:Complex}(x::AbstractSparseVector{T}) = _unarymap_selectnz(ImagOp(), x)
 
 

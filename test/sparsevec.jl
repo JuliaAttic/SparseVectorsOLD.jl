@@ -66,24 +66,41 @@ showstr = "Sparse vector, length = 8, with 3 Float64 entries:\n" *
 
 ### Other Constructors
 
-# with size (and type) given
+# construct empty sparse vector
 
-x0 = SparseVector(8)
-@test isa(x0, SparseVector{Float64,Int})
-@test length(x0) == 8
-@test nnz(x0) == 0
-
-x0 = SparseVector(Float32, 8)
-@test isa(x0, SparseVector{Float32,Int})
-@test length(x0) == 8
-@test nnz(x0) == 0
-
-x0 = SparseVector(Float32, Int32, 8)
-@test isa(x0, SparseVector{Float32, Int32})
-@test length(x0) == 8
-@test nnz(x0) == 0
+@test exact_equal(sparsevector(Float64, 8), SparseVector(8, Int[], Float64[]))
 
 # from list of indices and values
+
+xc = sparsevector(Int[], Float64[], 8)
+@test exact_equal(xc, SparseVector(8, Int[], Float64[]))
+
+xc = sparsevector(Int[], Float64[])
+@test exact_equal(xc, SparseVector(0, Int[], Float64[]))
+
+x0 = SparseVector(8, [2, 3, 6], [12.0, 18.0, 25.0])
+
+xc = sparsevector([2, 3, 6], [12.0, 18.0, 25.0], 8)
+@test isa(xc, SparseVector{Float64,Int})
+@test exact_equal(xc, x0)
+
+xc = sparsevector([3, 6, 2], [18.0, 25.0, 12.0], 8)
+@test exact_equal(xc, x0)
+
+xc = sparsevector([2, 3, 4, 4, 6], [12.0, 18.0, 5.0, -5.0, 25.0], 8)
+@test exact_equal(xc, x0)
+
+xc = sparsevector([1, 1, 1, 2, 3, 3, 6], [2.0, 3.0, -5.0, 12.0, 10.0, 8.0, 25.0], 8)
+@test exact_equal(xc, x0)
+
+xc = sparsevector([3, 3], [5.0, -5.0], 8)
+@test exact_equal(xc, sparsevector(Float64, 8))
+
+xc = sparsevector([2, 3, 6, 7, 7], [12.0, 18.0, 25.0, 5.0, -5.0], 8)
+@test exact_equal(xc, x0)
+
+xc = sparsevector([2, 3, 6], [12.0, 18.0, 25.0])
+@test exact_equal(xc, SparseVector(6, [2, 3, 6], [12.0, 18.0, 25.0]))
 
 # from dictionary
 
@@ -127,7 +144,7 @@ end
 
 # setindex
 
-xc = SparseVector(8)
+xc = sparsevector(Float64, 8)
 xc[3] = 2.0
 @test exact_equal(xc, SparseVector(8, [3], [2.0]))
 
@@ -272,7 +289,7 @@ xm = SparseVector(8, [2, 6], [5.0, -19.25])
 # real & imag
 
 @test is(real(x), x)
-@test exact_equal(imag(x), SparseVector(Float64, length(x)))
+@test exact_equal(imag(x), sparsevector(Float64, length(x)))
 
 xcp = complex(x, x2)
 @test exact_equal(real(xcp), x)
