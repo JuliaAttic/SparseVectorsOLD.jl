@@ -72,7 +72,7 @@ function _sparsevector!{Tv,Ti<:Integer}(I::Vector{Ti}, V::Vector{Tv}, len::Integ
             r += 1
             i2 = I[r]
             if i2 == i  # accumulate r-th to the l-th entry
-                V[l] = _eval(combine, V[l], V[r])
+                V[l] = call(combine, V[l], V[r])
             else  # advance l, and move r-th to l-th
                 pv = V[l]
                 if pv != zero(Tv)
@@ -119,10 +119,10 @@ function sparsevector{Tv,Ti<:Integer}(I::AbstractVector{Ti}, V::AbstractVector{T
 end
 
 sparsevector{Ti<:Integer}(I::AbstractVector{Ti}, V::AbstractVector) =
-    sparsevector(I, V, AddOp())
+    sparsevector(I, V, AddFun())
 
 sparsevector{Ti<:Integer}(I::AbstractVector{Ti}, V::AbstractVector, len::Integer) =
-    sparsevector(I, V, len, AddOp())
+    sparsevector(I, V, len, AddFun())
 
 sparsevector{Ti<:Integer}(I::AbstractVector{Ti}, v::Number, combine::BinaryOp) =
     sparsevector(I, fill(v, length(I)), combine)
@@ -131,10 +131,10 @@ sparsevector{Ti<:Integer}(I::AbstractVector{Ti}, v::Number, len::Integer, combin
     sparsevector(I, fill(v, length(I)), len, combine)
 
 sparsevector{Ti<:Integer}(I::AbstractVector{Ti}, v::Number) =
-    sparsevector(I, v, AddOp())
+    sparsevector(I, v, AddFun())
 
 sparsevector{Ti<:Integer}(I::AbstractVector{Ti}, v::Number, len::Integer) =
-    sparsevector(I, v, len, AddOp())
+    sparsevector(I, v, len, AddFun())
 
 
 ### Construction from dictionary

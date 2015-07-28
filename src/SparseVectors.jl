@@ -10,7 +10,7 @@ import Base:
     float, complex, real, imag,
     abs, abs2, scale, scale!, dot,
     sum, sumabs, sumabs2, vecnorm,
-    sparse, sprand, sprandn, 
+    sparse, sprand, sprandn,
     A_mul_B!, At_mul_B, At_mul_B!
 
 import Base.LinAlg

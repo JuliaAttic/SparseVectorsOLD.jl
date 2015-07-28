@@ -3,31 +3,28 @@
 _copy_convert{T}(::Type{T}, x::Vector{T}) = copy(x)
 _copy_convert{R,T}(::Type{R}, x::AbstractVector{T}) = convert(Vector{R}, x)
 
-abstract UnaryOp
+import Base: Func, AddFun, MulFun
 
-immutable RealOp <: UnaryOp end
-_eval(::RealOp, x::Number) = real(x)
+if VERSION < v"0.4-dev"
+    call(f::Function, x) = f(x)
+    call(f::Function, x, y) = f(x, y)
+    call(f::Func{1}, x) = Base.evaluate(f, x)
+    call(f::Func{2}, x, y) = Base.evaluate(f, x, y)
+else
+    import Base: call
+end
 
-immutable ImagOp <: UnaryOp end
-_eval(::ImagOp, x::Number) = imag(x)
+immutable RealFun <: Func{1} end
+call(::RealFun, x) = real(x)
 
+immutable ImagFun <: Func{1} end
+call(::ImagFun, x) = imag(x)
 
-abstract BinaryOp
+immutable SubFun <: Func{2} end
+call(::SubFun, x, y) = x - y
 
-immutable AddOp <: BinaryOp end
-_eval(::AddOp, x::Number, y::Number) = x + y
+immutable ComplexFun <: Func{2} end
+call(::ComplexFun, x::Real, y::Real) = complex(x, y)
 
-immutable SubOp <: BinaryOp end
-_eval(::SubOp, x::Number, y::Number) = x - y
-
-immutable MulOp <: BinaryOp end
-_eval(::MulOp, x::Number, y::Number) = x * y
-
-immutable MaxOp <: BinaryOp end
-_eval(::MaxOp, x::Real, y::Real) = Base.scalarmax(x, y)
-
-immutable MinOp <: BinaryOp end
-_eval(::MinOp, x::Real, y::Real) = Base.scalarmin(x, y)
-
-immutable ComplexOp <: BinaryOp end
-_eval(::ComplexOp, x::Real, y::Real) = complex(x, y)
+typealias UnaryOp Union(Function, Func{1})
+typealias BinaryOp Union(Function, Func{2})
