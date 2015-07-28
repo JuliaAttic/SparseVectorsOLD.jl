@@ -259,3 +259,39 @@ function At_mul_B!{Tx,Ty}(α::Number, A::SparseMatrixCSC, x::AbstractSparseVecto
     end
     return y
 end
+
+
+### BLAS-2 / sparse A * sparse x -> dense y
+
+function At_mul_B{TvA,TiA,TvX,TiX}(A::SparseMatrixCSC{TvA,TiA}, x::AbstractSparseVector{TvX,TiX})
+    m, n = size(A)
+    length(x) == m || throw(DimensionMismatch())
+    Tv = promote_type(TvA, TvX)
+    Ti = promote_type(TiA, TiX)
+
+    xnzind = nonzeroinds(x)
+    xnzval = nonzeros(x)
+    Acolptr = A.colptr
+    Arowval = A.rowval
+    Anzval = A.nzval
+    mx = length(xnzind)
+
+    ynzind = Array(Ti, n)
+    ynzval = Array(Tv, n)
+
+    jr = 0
+    for j = 1:n
+        s = _spdot(Acolptr[j], Acolptr[j+1]-1, Arowval, Anzval,
+                   1, mx, xnzind, xnzval)
+        if s != zero(s)
+            jr += 1
+            ynzind[jr] = j
+            ynzval[jr] = s
+        end
+    end
+    if jr < n
+        resize!(ynzind, jr)
+        resize!(ynzval, jr)
+    end
+    SparseVector(n, ynzind, ynzval)
+end
