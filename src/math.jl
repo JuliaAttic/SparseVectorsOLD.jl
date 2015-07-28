@@ -1,50 +1,87 @@
 
 ### Unary Map
 
-function _unarymap_selectnz{Tv,Ti<:Integer}(f::UnaryOp, x::AbstractSparseVector{Tv,Ti})
-    R = typeof(call(f, zero(Tv)))
-    xnzind = nonzeroinds(x)
-    xnzval = nonzeros(x)
-    m = length(xnzind)
-
-    ynzind = Array(Ti, m)
-    ynzval = Array(R, m)
-    ir = 0
-    @inbounds for j = 1:m
-        i = xnzind[j]
-        v = call(f, xnzval[j])
-        if v != zero(v)
-            ir += 1
-            ynzind[ir] = i
-            ynzval[ir] = v
-        end
+# zero-preserving functions (z->z, nz->nz)
+for op in [:-, :abs, :abs2, :conj]
+    @eval begin
+        $(op)(x::AbstractSparseVector) =
+            SparseVector(length(x), copy(nonzeroinds(x)), $(op)(nonzeros(x)))
     end
-    resize!(ynzind, ir)
-    resize!(ynzval, ir)
-    SparseVector(length(x), ynzind, ynzval)
 end
 
-- (x::AbstractSparseVector) =
-    SparseVector(length(x), copy(nonzeroinds(x)), -nonzeros(x))
+# functions f, such that
+#   f(x) can be zero or non-zero when x != 0
+#   f(x) = 0 when x == 0
+#
+macro unarymap_nz2z_z2z(op, TF)
+    esc(quote
+        function $(op){Tv<:$(TF),Ti<:Integer}(x::AbstractSparseVector{Tv,Ti})
+            R = typeof($(op)(zero(Tv)))
+            xnzind = nonzeroinds(x)
+            xnzval = nonzeros(x)
+            m = length(xnzind)
 
-abs(x::AbstractSparseVector) =
-    SparseVector(length(x), copy(nonzeroinds(x)), abs(nonzeros(x)))
-abs2(x::AbstractSparseVector) =
-    SparseVector(length(x), copy(nonzeroinds(x)), abs2(nonzeros(x)))
+            ynzind = Array(Ti, m)
+            ynzval = Array(R, m)
+            ir = 0
+            @inbounds for j = 1:m
+                i = xnzind[j]
+                v = $(op)(xnzval[j])
+                if v != zero(v)
+                    ir += 1
+                    ynzind[ir] = i
+                    ynzval[ir] = v
+                end
+            end
+            resize!(ynzind, ir)
+            resize!(ynzval, ir)
+            SparseVector(length(x), ynzind, ynzval)
+        end
+    end)
+end
 
 real{T<:Real}(x::AbstractSparseVector{T}) = x
-real{T<:Complex}(x::AbstractSparseVector{T}) = _unarymap_selectnz(RealFun(), x)
+@unarymap_nz2z_z2z real Complex
 
 imag{Tv<:Real,Ti<:Integer}(x::AbstractSparseVector{Tv,Ti}) = SparseVector(length(x), Ti[], Tv[])
-imag{T<:Complex}(x::AbstractSparseVector{T}) = _unarymap_selectnz(ImagFun(), x)
+@unarymap_nz2z_z2z imag Complex
 
+for op in [:floor, :ceil, :trunc, :round]
+    @eval @unarymap_nz2z_z2z $(op) Real
+end
+
+for op in [:log1p, :expm1,
+           :sin, :tan, :sinpi, :sind, :tand,
+           :asin, :atan, :asind, :atand,
+           :sinh, :tanh, :asinh, :atanh]
+    @eval @unarymap_nz2z_z2z $(op) Number
+end
+
+# function that does not preserve zeros
+
+macro unarymap_z2nz(op, TF)
+    quote
+        function $(op){Tv<:$(TF),Ti<:Integer}(x::AbstractSparseVector{Tv,Ti})
+            v0 = $(op)(zero())
+            R = typeof(v0)
+            xnzind = nonzeroinds(x)
+            xnzval = nonzeros(x)
+            n = length(x)
+            m = length(xnzind)
+            y = fill(v0, n)
+            @inbounds for j = 1:m
+                y[xnzind[j]] = $(op)(xnzval[j])
+            end
+            y
+        end
+    end
+end
 
 ### Binary Map
 
 # mode:
 # 0: f(nz, nz) -> nz, f(z, nz) -> z, f(nz, z) ->  z
 # 1: f(nz, nz) -> z/nz, f(z, nz) -> nz, f(nz, z) -> nz
-
 
 function _binarymap{Tx,Ty}(f::BinaryOp,
                            x::AbstractSparseVector{Tx},

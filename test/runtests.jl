@@ -1,6 +1,7 @@
 tests = [
     "sparsevec",
     "sparsemat",
+    "math",
     "linalg"]
 
 for t in tests
