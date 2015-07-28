@@ -4,7 +4,7 @@ using SparseVectors
 
 macro benchfun2(bfun, tfun, descr, xs, ys, nrtimes)
     esc(quote
-        function $(bfun)(x::AbstractSparseVector, y::AbstractSparseVector, nr::Int)
+        function $(bfun)(x, y, nr::Int)
             println(string("Benchmark on ", $(string(descr)), " ..."))
             xmat = convert(SparseMatrixCSC, x)
             ymat = convert(SparseMatrixCSC, y)
@@ -42,3 +42,9 @@ y = sprand(n, 0.25)
 
 @benchfun2(bench_vadd, +, "sparse vector addition", x, y, 20)
 @benchfun2(bench_vmul, .*, "sparse vector multiplication", x, y, 20)
+
+A = sprand(1000, 1000, 0.1)
+x = sprand(1000, 0.2)
+
+@benchfun2(bench_Ax, *, "sparse matrix-vector product (A * x)", A, x, 100)
+@benchfun2(bench_Atx, At_mul_B, "sparse matrix-vector product (A'x)", A, x, 100)

@@ -237,7 +237,7 @@ function _dense2sparsevec{Tv}(s::Vector{Tv}, initcap::Int)
     @inbounds for i = 1:n
         v = s[i]
         if v != zero(v)
-            if c < cap
+            if c >= cap
                 cap *= 2
                 resize!(nzind, cap)
                 resize!(nzval, cap)
