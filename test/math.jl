@@ -73,9 +73,9 @@ let x = spv_x1, x2 = spv_x2
     @test exact_equal(imag(xcp), x2)
 end
 
-### Zero-preserving math functions
+### Zero-preserving math functions: sparse -> sparse
 
-function check_sp2sp{T}(f::Function, x::SparseVector{T}, xf::Vector{T})
+function check_nz2z_z2z{T}(f::Function, x::SparseVector{T}, xf::Vector{T})
     R = typeof(f(zero(T)))
     r = f(x)
     isa(r, AbstractSparseVector) || error("$f(x) is not a sparse vector.")
@@ -85,14 +85,32 @@ function check_sp2sp{T}(f::Function, x::SparseVector{T}, xf::Vector{T})
 end
 
 for f in [floor, ceil, trunc, round]
-    check_sp2sp(f, rnd_x1, rnd_x1f)
+    check_nz2z_z2z(f, rnd_x1, rnd_x1f)
 end
 
 for f in [log1p, expm1,
           sin, tan, sinpi, sind, tand,
           asin, atan, asind, atand,
           sinh, tanh, asinh, atanh]
-    check_sp2sp(f, rnd_x0, rnd_x0f)
+    check_nz2z_z2z(f, rnd_x0, rnd_x0f)
+end
+
+### Non-zero-preserving math functions: sparse -> dense
+
+function check_z2nz{T}(f::Function, x::SparseVector{T}, xf::Vector{T})
+    R = typeof(f(zero(T)))
+    r = f(x)
+    isa(r, Vector) || error("$f(x) is not a dense vector.")
+    eltype(r) == R || error("$f(x) results in eltype = $(eltype(r)), expect $R")
+    r == f(xf) || error("Incorrect results found in $f(x).")
+end
+
+for f in [exp, exp2, exp10, log, log2, log10,
+          cos, csc, cot, sec, cospi,
+          cosd, cscd, cotd, secd,
+          acos, acot, acosd, acotd,
+          cosh, csch, coth, sech, acsch, asech]
+    check_z2nz(f, rnd_x0, rnd_x0f)
 end
 
 
