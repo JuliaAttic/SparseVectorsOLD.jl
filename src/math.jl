@@ -347,4 +347,25 @@ sum(x::AbstractSparseVector) = sum(nonzeros(x))
 sumabs(x::AbstractSparseVector) = sumabs(nonzeros(x))
 sumabs2(x::AbstractSparseVector) = sumabs2(nonzeros(x))
 
+function maximum{T<:Real}(x::AbstractSparseVector{T})
+    n = length(x)
+    n > 0 || throw(ArgumentError("maximum over empty array is not allowed."))
+    m = nnz(x)
+    (m == 0 ? zero(T) :
+     m == n ? maximum(nonzeros(x)) :
+     max(zero(T), maximum(nonzeros(x))))::T
+end
+
+function minimum{T<:Real}(x::AbstractSparseVector{T})
+    n = length(x)
+    n > 0 || throw(ArgumentError("minimum over empty array is not allowed."))
+    m = nnz(x)
+    (m == 0 ? zero(T) :
+     m == n ? minimum(nonzeros(x)) :
+     min(zero(T), minimum(nonzeros(x))))::T
+end
+
+maxabs{T<:Number}(x::AbstractSparseVector{T}) = maxabs(nonzeros(x))
+minabs{T<:Number}(x::AbstractSparseVector{T}) = nnz(x) < length(x) ? abs(zero(T)) : minabs(nonzeros(x))
+
 vecnorm(x::AbstractSparseVector, p::Real=2) = vecnorm(nonzeros(x), p)

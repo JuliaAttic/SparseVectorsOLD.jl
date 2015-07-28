@@ -6,8 +6,8 @@ import Base:
     length, size, nnz, countnz, nonzeros, getindex, setindex!,
     showarray, show, writemime,
     convert, full, vec, copy, reinterpret, float, complex,
-    scale, scale!, dot,
-    sum, sumabs, sumabs2, vecnorm,
+    scale, scale!, dot, vecnorm,
+    sum, sumabs, sumabs2, maximum, minimum, maxabs, minabs, 
     sparse, sprand, sprandn,
     A_mul_B!, At_mul_B, At_mul_B!
 

@@ -116,6 +116,8 @@ end
 
 ### Reduction
 
+# sum, sumabs, sumabs2, vecnorm
+
 let x = spv_x1
     @test sum(x) == 4.0
     @test sumabs(x) == 5.5
@@ -125,4 +127,37 @@ let x = spv_x1
     @test vecnorm(x, 1) == 5.5
     @test vecnorm(x, 2) == sqrt(14.375)
     @test vecnorm(x, Inf) == 3.5
+end
+
+# maximum, minimum, maxabs, minabs
+
+let x = spv_x1
+    @test maximum(x) == 3.5
+    @test minimum(x) == -0.75
+    @test maxabs(x) == 3.5
+    @test minabs(x) == 0.0
+end
+
+let x = abs(spv_x1)
+    @test maximum(x) == 3.5
+    @test minimum(x) == 0.0
+end
+
+let x = -abs(spv_x1)
+    @test maximum(x) == 0.0
+    @test minimum(x) == -3.5
+end
+
+let x = SparseVector(3, [1, 2, 3], [-4.5, 2.5, 3.5])
+    @test maximum(x) == 3.5
+    @test minimum(x) == -4.5
+    @test maxabs(x) == 4.5
+    @test minabs(x) == 2.5
+end
+
+let x = sparsevector(Float64, 8)
+    @test maximum(x) == 0.0
+    @test minimum(x) == 0.0
+    @test maxabs(x) == 0.0
+    @test minabs(x) == 0.0
 end
