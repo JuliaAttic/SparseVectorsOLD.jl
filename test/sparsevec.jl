@@ -66,6 +66,8 @@ showstr = "Sparse vector, length = 8, with 3 Float64 entries:\n" *
 
 ### Other Constructors
 
+# with size (and type) given
+
 x0 = SparseVector(8)
 @test isa(x0, SparseVector{Float64,Int})
 @test length(x0) == 8
@@ -81,6 +83,22 @@ x0 = SparseVector(Float32, Int32, 8)
 @test length(x0) == 8
 @test nnz(x0) == 0
 
+# from dictionary
+
+dct = Dict{Int,Float64}()
+for i in nonzeroinds(x)
+    dct[i] = x_full[i]
+end
+xc = sparsevector(dct, 8)
+@test isa(xc, SparseVector{Float64,Int})
+@test exact_equal(x, xc)
+
+xc = sparsevector(dct)
+@test isa(xc, SparseVector{Float64,Int})
+@test exact_equal(xc, SparseVector(6, [2, 5, 6], [1.25, -0.75, 3.5]))
+
+# sprand & sprandn
+
 xr = sprand(1000, 0.3)
 @test isa(xr, SparseVector{Float64,Int})
 @test length(xr) == 1000
@@ -95,14 +113,6 @@ xr = sprandn(1000, 0.3)
 @test isa(xr, SparseVector{Float64,Int})
 @test length(xr) == 1000
 @test any(nonzeros(xr) .> 0.0) && any(nonzeros(xr) .< 0.0)
-
-dct = Dict{Int,Float64}()
-for i in nonzeroinds(x)
-    dct[i] = x_full[i]
-end
-xc = sparsevector(8, dct)
-@test isa(xc, SparseVector{Float64,Int})
-@test exact_equal(x, xc)
 
 
 ### Element access

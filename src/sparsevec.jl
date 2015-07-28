@@ -32,17 +32,25 @@ SparseVector(n::Integer) = SparseVector(n, Int[], Float64[])
 SparseVector{Tv}(::Type{Tv}, n::Integer) = SparseVector(n, Int[], Tv[])
 SparseVector{Tv,Ti<:Integer}(::Type{Tv}, ::Type{Ti}, n::Integer) = SparseVector(n, Ti[], Tv[])
 
-function sparsevector{Tv,Ti<:Integer}(n::Integer, dict::Associative{Ti,Tv})
+
+### Construction from dictionary
+
+function sparsevector{Tv,Ti<:Integer}(dict::Associative{Ti,Tv})
     m = length(dict)
     nzind = Array(Ti, m)
     nzval = Array(Tv, m)
 
     cnt = 0
+    len = 0
     for (k, v) in dict
+        k >= 1 || error("An index (key) is out of bound.")
+        if k > len
+            len = k
+        end
         if v != zero(v)
             cnt += 1
-            nzind[cnt] = k
-            nzval[cnt] = v
+            @inbounds nzind[cnt] = k
+            @inbounds nzval[cnt] = v
         end
     end
     resize!(nzind, cnt)
@@ -51,10 +59,31 @@ function sparsevector{Tv,Ti<:Integer}(n::Integer, dict::Associative{Ti,Tv})
     p = sortperm(nzind)
     permute!(nzind, p)
     permute!(nzval, p)
-    return SparseVector{Tv,Ti}(convert(Int, n), nzind, nzval)
+    return SparseVector(len, nzind, nzval)
 end
 
+function sparsevector{Tv,Ti<:Integer}(dict::Associative{Ti,Tv}, len::Integer)
+    m = length(dict)
+    nzind = Array(Ti, m)
+    nzval = Array(Tv, m)
 
+    cnt = 0
+    for (k, v) in dict
+        1 <= k <= len || error("An index (key) is out of bound.")
+        if v != zero(v)
+            cnt += 1
+            @inbounds nzind[cnt] = k
+            @inbounds nzval[cnt] = v
+        end
+    end
+    resize!(nzind, cnt)
+    resize!(nzval, cnt)
+
+    p = sortperm(nzind)
+    permute!(nzind, p)
+    permute!(nzval, p)
+    return SparseVector(len, nzind, nzval)
+end
 
 
 ### Element access
