@@ -60,9 +60,9 @@ end
 # function that does not preserve zeros
 
 macro unarymap_z2nz(op, TF)
-    quote
+    esc(quote
         function $(op){Tv<:$(TF),Ti<:Integer}(x::AbstractSparseVector{Tv,Ti})
-            v0 = $(op)(zero())
+            v0 = $(op)(zero(Tv))
             R = typeof(v0)
             xnzind = nonzeroinds(x)
             xnzval = nonzeros(x)
@@ -74,7 +74,7 @@ macro unarymap_z2nz(op, TF)
             end
             y
         end
-    end
+    end)
 end
 
 for op in [:exp, :exp2, :exp10, :log, :log2, :log10,
