@@ -115,7 +115,8 @@ ndims(x)    # get the number of dimensions (1)
 length(x)   # get the length
 size(x)     # get the size, i.e. (length(x),)
 
-x[i]        # get the i-th element of x
+x[I]        # getindex with index(es) I,
+            # where I can be either an integer or an integer array
 x[i] = v    # set the i-th element of x to v
 ```
 
