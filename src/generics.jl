@@ -10,7 +10,44 @@ end
 getindex{Tv}(x::AbstractSparseVector{Tv}, i::Integer) =
     _spgetindex(nnz(x), nonzeroinds(x), nonzeros(x), i)
 
-function getindex{Tv,Ti<:Integer}(x::AbstractSparseVector{Tv}, I::AbstractArray{Ti})
+function getindex{Tv,Ti}(x::AbstractSparseVector{Tv,Ti}, I::UnitRange)
+    xlen = length(x)
+    i0 = first(I)
+    i1 = last(I)
+    (i0 >= 1 && i1 <= xlen) || throw(BoundsError())
+
+    xnzind = nonzeroinds(x)
+    xnzval = nonzeros(x)
+    m = length(xnzind)
+
+    # locate the first j0, s.t. xnzind[j0] >= i0
+    j0 = 1
+    while j0 <= m && xnzind[j0] < i0
+        j0 += 1
+    end
+    # locate the last j1, s.t. xnzind[j1] <= i1
+    j1 = j0 - 1
+    while j1 < m && xnzind[j1+1] <= i1
+        j1 += 1
+    end
+
+    # compute the number of non-zeros
+    jrgn = j0:j1
+    mr = length(jrgn)
+    rind = Array(Ti, mr)
+    rval = Array(Tv, mr)
+    if mr > 0
+        c = 0
+        for j in jrgn
+            c += 1
+            rind[c] = convert(Ti, xnzind[j] - i0 + 1)
+            rval[c] = xnzval[j]
+        end
+    end
+    SparseVector(length(I), rind, rval)
+end
+
+function getindex{Tv,Ti}(x::AbstractSparseVector{Tv,Ti}, I::AbstractArray)
     xnzind = nonzeroinds(x)
     xnzval = nonzeros(x)
     m = length(xnzind)
@@ -22,7 +59,7 @@ function getindex{Tv,Ti<:Integer}(x::AbstractSparseVector{Tv}, I::AbstractArray{
         v = _spgetindex(m, xnzind, xnzval, I[j])
         if v != zero(v)
             c += 1
-            nzind[c] = j
+            nzind[c] = convert(Ti, j)
             nzval[c] = v
         end
     end

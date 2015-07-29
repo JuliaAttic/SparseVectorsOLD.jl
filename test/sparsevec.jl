@@ -161,6 +161,20 @@ for (x, xf) in [(spv_x1, x1_full), (spv_x2, x2_full)]
     end
 end
 
+# range index
+let x = spv_x2
+    # range that contains no non-zeros
+    @test exact_equal(x[3:2], sparsevector(Float64, 0))
+    @test exact_equal(x[3:3], sparsevector(Float64, 1))
+    @test exact_equal(x[3:5], sparsevector(Float64, 3))
+
+    # range with non-zeros
+    @test exact_equal(x[1:length(x)], x)
+    @test exact_equal(x[1:5], SparseVector(5, [1,2], [3.25, 4.0]))
+    @test exact_equal(x[2:6], SparseVector(5, [1,5], [4.0, -5.5]))
+    @test exact_equal(x[2:8], SparseVector(7, [1,5,6], [4.0, -5.5, -6.0]))
+end
+
 # generic array index
 let x = sprand(100, 0.5)
     I = rand(1:length(x), 20)
