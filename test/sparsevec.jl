@@ -154,10 +154,21 @@ end
 
 # getindex
 
+# single integer index
 for (x, xf) in [(spv_x1, x1_full), (spv_x2, x2_full)]
     for i = 1:length(x)
         @test x[i] == xf[i]
     end
+end
+
+# generic array index
+let x = sprand(100, 0.5)
+    I = rand(1:length(x), 20)
+    @which x[I]
+    r = x[I]
+    @test isa(r, SparseVector{Float64,Int})
+    @test all(nonzeros(r) .!= 0.0)
+    @test full(r) == full(x)[I]
 end
 
 # setindex

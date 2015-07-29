@@ -2,12 +2,35 @@
 
 ### getindex
 
-function getindex{Tv}(x::AbstractSparseVector{Tv}, i::Integer)
-    nzind = nonzeroinds(x)
-    nzval = nonzeros(x)
-    m = length(nzind)
-    ii = searchsortedfirst(nzind, i)
+function _spgetindex{Tv,Ti}(m::Int, nzind::AbstractVector{Ti}, nzval::AbstractVector{Tv}, i::Integer)
+    ii = searchsortedfirst(nzind, convert(Ti, i))
     (ii <= m && nzind[ii] == i) ? nzval[ii] : zero(Tv)
+end
+
+getindex{Tv}(x::AbstractSparseVector{Tv}, i::Integer) =
+    _spgetindex(nnz(x), nonzeroinds(x), nonzeros(x), i)
+
+function getindex{Tv,Ti<:Integer}(x::AbstractSparseVector{Tv}, I::AbstractArray{Ti})
+    xnzind = nonzeroinds(x)
+    xnzval = nonzeros(x)
+    m = length(xnzind)
+    n = length(I)
+    nzind = Array(Ti, n)
+    nzval = Array(Tv, n)
+    c = 0
+    for j = 1:n
+        v = _spgetindex(m, xnzind, xnzval, I[j])
+        if v != zero(v)
+            c += 1
+            nzind[c] = j
+            nzval[c] = v
+        end
+    end
+    if c < n
+        resize!(nzind, c)
+        resize!(nzval, c)
+    end
+    SparseVector(n, nzind, nzval)
 end
 
 ### show and friends
