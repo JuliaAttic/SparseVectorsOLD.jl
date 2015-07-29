@@ -55,9 +55,6 @@ scale(a::Complex, x::AbstractSparseVector) = scale(x, a)
 
 # dot
 
-_dot(x::Number, y::Number) = x * conj(y)
-_dot(x::Real, y::Real) = x * y
-
 function dot{Tx<:Number,Ty<:Number}(x::StridedVector{Tx}, y::AbstractSparseVector{Ty})
     n = length(x)
     length(y) == n || throw(DimensionMismatch())
@@ -82,7 +79,8 @@ function dot{Tx<:Number,Ty<:Number}(x::AbstractSparseVector{Tx}, y::AbstractVect
     return s
 end
 
-function _spdot(xj::Int, xj_last::Int, xnzind, xnzval,
+function _spdot(f::BinaryOp,
+                xj::Int, xj_last::Int, xnzind, xnzval,
                 yj::Int, yj_last::Int, ynzind, ynzval)
     # dot product between ranges of non-zeros,
     s = zero(eltype(xnzval)) * zero(eltype(ynzval))
@@ -90,7 +88,7 @@ function _spdot(xj::Int, xj_last::Int, xnzind, xnzval,
         ix = xnzind[xj]
         iy = ynzind[yj]
         if ix == iy
-            s += _dot(xnzval[xj], ynzval[yj])
+            s += call(f, xnzval[xj], ynzval[yj])
             xj += 1
             yj += 1
         elseif ix < iy
@@ -111,7 +109,8 @@ function dot{Tx<:Number,Ty<:Number}(x::AbstractSparseVector{Tx}, y::AbstractSpar
     xnzval = nonzeros(x)
     ynzval = nonzeros(y)
 
-    _spdot(1, length(xnzind), xnzind, xnzval,
+    _spdot(DotFun(),
+           1, length(xnzind), xnzind, xnzval,
            1, length(ynzind), ynzind, ynzval)
 end
 
@@ -196,16 +195,28 @@ end
 
 ### BLAS-2 / sparse A * sparse x -> dense y
 
-function sparsemv_to_dense(A::SparseMatrixCSC, x::AbstractSparseVector; trans::Bool=false)
+function densemv(A::SparseMatrixCSC, x::AbstractSparseVector; trans::Char='N')
+    xlen::Int
+    ylen::Int
     m, n = size(A)
-    xlen = ifelse(trans, m, n)::Int
+    if trans == 'N' || trans == 'n'
+        xlen = n; ylen = m
+    elseif trans == 'T' || trans == 't' || trans == 'C' || trans == 'c'
+        xlen = m; ylen = n
+    else
+        throw(ArgumentError("Invalid trans character $trans"))
+    end
     xlen == length(x) || throw(DimensionMismatch())
     T = promote_type(eltype(A), eltype(x))
-    y = Array(T, ifelse(trans, n, m)::Int)
-    if trans
-        At_mul_B!(y, A, x)
-    else
+    y = Array(T, ylen)
+    if trans == 'N' || trans == 'N'
         A_mul_B!(y, A, x)
+    elseif trans == 'T' || trans == 't'
+        At_mul_B!(y, A, x)
+    elseif trans == 'C' || trans == 'c'
+        Ac_mul_B!(y, A, x)
+    else
+        throw(ArgumentError("Invalid trans character $trans"))
     end
     y
 end
@@ -248,7 +259,18 @@ end
 At_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::SparseMatrixCSC, x::AbstractSparseVector{Tx}) =
     At_mul_B!(one(Tx), A, x, zero(Ty), y)
 
-function At_mul_B!{Tx,Ty}(α::Number, A::SparseMatrixCSC, x::AbstractSparseVector{Tx}, β::Number, y::StridedVector{Ty})
+At_mul_B!{Tx,Ty}(α::Number, A::SparseMatrixCSC, x::AbstractSparseVector{Tx}, β::Number, y::StridedVector{Ty}) =
+    _At_or_Ac_mul_B!(MulFun(), α, A, x, β, y)
+
+Ac_mul_B!{Tx,Ty}(y::StridedVector{Ty}, A::SparseMatrixCSC, x::AbstractSparseVector{Tx}) =
+    Ac_mul_B!(one(Tx), A, x, zero(Ty), y)
+
+Ac_mul_B!{Tx,Ty}(α::Number, A::SparseMatrixCSC, x::AbstractSparseVector{Tx}, β::Number, y::StridedVector{Ty}) =
+    _At_or_Ac_mul_B!(DotFun(), α, A, x, β, y)
+
+function _At_or_Ac_mul_B!{Tx,Ty}(tfun::BinaryOp,
+                                 α::Number, A::SparseMatrixCSC, x::AbstractSparseVector{Tx},
+                                 β::Number, y::StridedVector{Ty})
     m, n = size(A)
     length(x) == m && length(y) == n || throw(DimensionMismatch())
     n == 0 && return y
@@ -266,7 +288,7 @@ function At_mul_B!{Tx,Ty}(α::Number, A::SparseMatrixCSC, x::AbstractSparseVecto
 
     for j = 1:n
         # s <- dot(A[:,j], x)
-        s = _spdot(Acolptr[j], Acolptr[j+1]-1, Arowval, Anzval,
+        s = _spdot(tfun, Acolptr[j], Acolptr[j+1]-1, Arowval, Anzval,
                    1, mx, xnzind, xnzval)
         @inbounds y[j] += s * α
     end
@@ -277,12 +299,18 @@ end
 ### BLAS-2 / sparse A * sparse x -> dense y
 
 function *(A::SparseMatrixCSC, x::AbstractSparseVector)
-    y = sparsemv_to_dense(A, x)
+    y = densemv(A, x)
     initcap = min(nnz(A), size(A,1))
     _dense2sparsevec(y, initcap)
 end
 
-function At_mul_B{TvA,TiA,TvX,TiX}(A::SparseMatrixCSC{TvA,TiA}, x::AbstractSparseVector{TvX,TiX})
+At_mul_B(A::SparseMatrixCSC, x::AbstractSparseVector) =
+    _At_or_Ac_mul_B(MulFun(), A, x)
+
+Ac_mul_B(A::SparseMatrixCSC, x::AbstractSparseVector) =
+    _At_or_Ac_mul_B(DotFun(), A, x)
+
+function _At_or_Ac_mul_B{TvA,TiA,TvX,TiX}(tfun::BinaryOp, A::SparseMatrixCSC{TvA,TiA}, x::AbstractSparseVector{TvX,TiX})
     m, n = size(A)
     length(x) == m || throw(DimensionMismatch())
     Tv = promote_type(TvA, TvX)
@@ -300,7 +328,7 @@ function At_mul_B{TvA,TiA,TvX,TiX}(A::SparseMatrixCSC{TvA,TiA}, x::AbstractSpars
 
     jr = 0
     for j = 1:n
-        s = _spdot(Acolptr[j], Acolptr[j+1]-1, Arowval, Anzval,
+        s = _spdot(tfun, Acolptr[j], Acolptr[j+1]-1, Arowval, Anzval,
                    1, mx, xnzind, xnzval)
         if s != zero(s)
             jr += 1

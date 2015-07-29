@@ -9,7 +9,7 @@ import Base:
     scale, scale!, dot, vecnorm,
     sum, sumabs, sumabs2, maximum, minimum, maxabs, minabs,
     sparse, sprand, sprandn,
-    A_mul_B!, At_mul_B, At_mul_B!
+    A_mul_B!, At_mul_B, At_mul_B!, Ac_mul_B, Ac_mul_B!
 
 import Base:
     +, .+, -, .-, *, .*, max, min,
@@ -41,7 +41,7 @@ export
     nonzeroinds,
     sparsevector,
     unsafe_colrange,
-    sparsemv_to_dense
+    densemv
 
 # sources
 include("common.jl")

@@ -40,6 +40,16 @@ let x = sprand(16, 0.5), x2 = sprand(16, 0.4)
     end
 end
 
+let x = complex(sprand(32, 0.6), sprand(32, 0.6)),
+    y = complex(sprand(32, 0.6), sprand(32, 0.6))
+    xf = full(x)::Vector{Complex128}
+    yf = full(y)::Vector{Complex128}
+    @test_approx_eq dot(x, x) dot(xf, xf)
+    @test_approx_eq dot(x, y) dot(xf, yf)
+end
+
+
+
 ### BLAS Level-2:
 
 ## dense A * sparse x -> dense y
@@ -81,7 +91,7 @@ let A = sprandn(9, 16, 0.5), x = sprand(16, 0.7)
         @test is(A_mul_B!(α, A, x, β, y), y)
         @test_approx_eq y rr
     end
-    y = sparsemv_to_dense(A, x)
+    y = densemv(A, x)
     @test isa(y, Vector{Float64})
     @test_approx_eq y Af * xf
 end
@@ -95,26 +105,56 @@ let A = sprandn(16, 9, 0.5), x = sprand(16, 0.7)
         @test is(At_mul_B!(α, A, x, β, y), y)
         @test_approx_eq y rr
     end
-    y = sparsemv_to_dense(A, x; trans=true)
+    y = densemv(A, x; trans='T')
     @test isa(y, Vector{Float64})
     @test_approx_eq y At_mul_B(Af, xf)
 end
 
-## sparse A * sparse x -> sparse y
-
-let A = sprandn(9, 16, 0.5), x = sprand(16, 0.7)
+let A = complex(sprandn(7, 8, 0.5), sprandn(7, 8, 0.5)),
+    x = complex(sprandn(8, 0.6), sprandn(8, 0.6)),
+    x2 = complex(sprandn(7, 0.75), sprandn(7, 0.75))
     Af = full(A)
     xf = full(x)
-    y = A * x
-    @test isa(y, SparseVector{Float64,Int})
-    @test_approx_eq full(y) Af * xf
+    x2f = full(x2)
+    @test_approx_eq densemv(A, x; trans='N') Af * xf
+    @test_approx_eq densemv(A, x2; trans='T') Af.' * x2f
+    @test_approx_eq densemv(A, x2; trans='C') Af'x2f
 end
 
-let A = sprandn(16, 9, 0.5), x = sprand(16, 0.7)
+## sparse A * sparse x -> sparse y
+
+let A = sprandn(9, 16, 0.5), x = sprand(16, 0.7), x2 = sprand(9, 0.7)
     Af = full(A)
     xf = full(x)
-    y = At_mul_B(A, x)
+    x2f = full(x2)
+
+    y = A * x
     @test isa(y, SparseVector{Float64,Int})
     @test all(nonzeros(y) .!= 0.0)
-    @test_approx_eq full(y) At_mul_B(Af, xf)
+    @test_approx_eq full(y) Af * xf
+
+    y = At_mul_B(A, x2)
+    @test isa(y, SparseVector{Float64,Int})
+    @test all(nonzeros(y) .!= 0.0)
+    @test_approx_eq full(y) Af'x2f
+end
+
+let A = complex(sprandn(7, 8, 0.5), sprandn(7, 8, 0.5)),
+    x = complex(sprandn(8, 0.6), sprandn(8, 0.6)),
+    x2 = complex(sprandn(7, 0.75), sprandn(7, 0.75))
+    Af = full(A)
+    xf = full(x)
+    x2f = full(x2)
+
+    y = A * x
+    @test isa(y, SparseVector{Complex128,Int})
+    @test_approx_eq full(y) Af * xf
+
+    y = At_mul_B(A, x2)
+    @test isa(y, SparseVector{Complex128,Int})
+    @test_approx_eq full(y) Af.' * x2f
+
+    y = Ac_mul_B(A, x2)
+    @test isa(y, SparseVector{Complex128,Int})
+    @test_approx_eq full(y) Af'x2f
 end

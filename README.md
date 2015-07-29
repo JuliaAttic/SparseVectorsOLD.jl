@@ -256,8 +256,10 @@ At_mul_B(A, x)            # A' * x, without explicitly transposing A
 
 # If you want to get a dense result even when both A and x are sparse
 # then you can write:
-sparsemv_to_dense(A, x)               # A * x --> dense vector
-sparsemv_to_dense(A, x; trans=true)   # A' * x -> dense vector
+densemv(A, x)               # A * x --> dense vector
+densemv(A, x; trans='N')    # A * x, as above
+densemv(A, x; trans='T')    # transpose(A) * x -> dense vector
+densemv(A, x; trans='C')    # ctranspose(A) * x -> dense vector
 
 # Note: the following functions are only for cases where y is a strided vector
 A_mul_B!(y, A, x)         # y <- A * x
