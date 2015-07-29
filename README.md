@@ -251,8 +251,9 @@ dot(x, y)   # Compute the dot product between x and y
 
 ```julia
 # Note: the product is dense iff A is dense
-A * x                     # A * x (matrix-vector product)
-At_mul_B(A, x)            # A' * x, without explicitly transposing A
+A * x             # A * x (matrix-vector product)
+At_mul_B(A, x)    # A.' * x, without explicitly transposing A
+Ac_mul_B(A, x)    # A' * x, without explicitly conjugate-transposing A
 
 # If you want to get a dense result even when both A and x are sparse
 # then you can write:
@@ -264,6 +265,8 @@ densemv(A, x; trans='C')    # ctranspose(A) * x -> dense vector
 # Note: the following functions are only for cases where y is a strided vector
 A_mul_B!(y, A, x)         # y <- A * x
 A_mul_B!(a, A, x, b, y)   # y <- a * A * x + b * y
-At_mul_B(y, A, x)         # y <- A' * x
-At_mul_B!(a, A, x, b, y)  # y <- a * A' * x + b * y
+At_mul_B(y, A, x)         # y <- A.' * x
+At_mul_B!(a, A, x, b, y)  # y <- a * A.' * x + b * y
+Ac_mul_B(y, A, x)         # y <- A' * x
+Ac_mul_B!(a, A, x, b, y)  # y <- a * A' * x + b * y
 ```
