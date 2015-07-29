@@ -153,7 +153,7 @@ convert(SparseMatrixCSC{Tv,Ti}, v)
 
 ## Views
 
-The package provides methods to obtain views of sparse vectors
+The package provides methods to obtain views of sparse vectors or individual columns of a sparse matrix:
 
 ```julia
 view(x)   # construct a SparseVectorView instance as a view of x
@@ -162,6 +162,9 @@ view(x)   # construct a SparseVectorView instance as a view of x
 view(A, :, i)   # construct a view of the i-th column of X
                 # where X is an instance of SparseMatrixCSC
                 # returns a instance of SparseVectorView
+
+getcol(A, i)   # get a copy of the i-th column of a sparse matrix A
+               # returns an instance of SparseVector
 
 unsafe_colrange(A, i1:i2)  # construct an unsafe view of a range of columns
                            # i.e. from the i1-th to i2-th column.

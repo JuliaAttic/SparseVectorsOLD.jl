@@ -13,6 +13,13 @@ function view(x::SparseMatrixCSC, ::Colon, j::Integer)
     SparseVectorView(x.m, view(x.rowval, rgn), view(x.nzval, rgn))
 end
 
+function getcol(x::SparseMatrixCSC, j::Integer)
+    1 <= j <= x.n || throw(BoundsError())
+    r1 = convert(Int, x.colptr[j])
+    r2 = convert(Int, x.colptr[j+1]) - 1
+    SparseVector(x.m, x.rowval[r1:r2], x.nzval[r1:r2])
+end
+
 function unsafe_colrange{Tv,Ti}(x::SparseMatrixCSC{Tv,Ti}, J::UnitRange)
     jfirst = first(J)
     jlast = last(J)

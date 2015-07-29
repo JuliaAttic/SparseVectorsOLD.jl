@@ -40,6 +40,7 @@ export
     # functions
     nonzeroinds,
     sparsevector,
+    getcol,
     unsafe_colrange,
     densemv
 
