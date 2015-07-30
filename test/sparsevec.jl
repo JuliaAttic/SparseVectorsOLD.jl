@@ -278,3 +278,25 @@ let x = spv_x1, xf = x1_full
     @test isa(xm, SparseMatrixCSC{Float32,Int})
     @test full(xm) == reshape(convert(Vector{Float32}, xf), 8, 1)
 end
+
+
+### Concatenation
+
+let m = 80, n = 100
+    A = Array(SparseVector{Float64,Int}, n)
+    tnnz = 0
+    for i = 1:length(A)
+        A[i] = sprand(m, 0.3)
+        tnnz += nnz(A[i])
+    end
+
+    H = hcat(A...)
+    @test isa(H, SparseMatrixCSC{Float64,Int})
+    @test size(H) == (m, n)
+    @test nnz(H) == tnnz
+    Hr = zeros(m, n)
+    for j = 1:n
+        Hr[:,j] = full(A[j])
+    end
+    @test full(H) == Hr
+end

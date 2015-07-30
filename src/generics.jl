@@ -165,3 +165,34 @@ float(x::AbstractSparseVector) =
 complex{Tv<:Complex}(x::AbstractSparseVector{Tv}) = x
 complex(x::AbstractSparseVector) =
     SparseVector(length(x), copy(nonzeroinds(x)), complex(nonzeros(x)))
+
+
+### Concatenation
+
+function hcat{Tv,Ti}(X::AbstractSparseVector{Tv,Ti}...)
+    # check sizes
+    n = length(X)
+    m = length(X[1])
+    tnnz = nnz(X[1])
+    for j = 2:n
+        length(X[j]) == m ||
+            throw(DimensionMismatch("Inconsistent column lengths."))
+        tnnz += nnz(X[j])
+    end
+
+    colptr = Array(Ti, n+1)
+    nzrow = Array(Ti, tnnz)
+    nzval = Array(Tv, tnnz)
+    roff = 1
+    @inbounds for j = 1:n
+        xj = X[j]
+        xnzind = nonzeroinds(xj)
+        xnzval = nonzeros(xj)
+        colptr[j] = roff
+        copy!(nzrow, roff, xnzind)
+        copy!(nzval, roff, xnzval)
+        roff += length(xnzind)
+    end
+    colptr[n+1] = roff
+    SparseMatrixCSC{Tv,Ti}(m, n, colptr, nzrow, nzval)
+end
