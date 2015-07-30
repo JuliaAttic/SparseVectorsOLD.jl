@@ -299,4 +299,10 @@ let m = 80, n = 100
         Hr[:,j] = full(A[j])
     end
     @test full(H) == Hr
+
+    V = vcat(A...)
+    @test isa(V, SparseVector{Float64,Int})
+    @test length(V) == m * n
+    Vr = vec(Hr)
+    @test full(V) == Vr
 end

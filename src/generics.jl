@@ -180,6 +180,7 @@ function hcat{Tv,Ti}(X::AbstractSparseVector{Tv,Ti}...)
         tnnz += nnz(X[j])
     end
 
+    # construction
     colptr = Array(Ti, n+1)
     nzrow = Array(Ti, tnnz)
     nzval = Array(Tv, tnnz)
@@ -195,4 +196,32 @@ function hcat{Tv,Ti}(X::AbstractSparseVector{Tv,Ti}...)
     end
     colptr[n+1] = roff
     SparseMatrixCSC{Tv,Ti}(m, n, colptr, nzrow, nzval)
+end
+
+function vcat{Tv,Ti}(X::AbstractSparseVector{Tv,Ti}...)
+    # check sizes
+    n = length(X)
+    tnnz = 0
+    for j = 1:n
+        tnnz += nnz(X[j])
+    end
+
+    # construction
+    rnzind = Array(Ti, tnnz)
+    rnzval = Array(Tv, tnnz)
+    ir = 0
+    len = 0
+    @inbounds for j = 1:n
+        xj = X[j]
+        xnzind = nonzeroinds(xj)
+        xnzval = nonzeros(xj)
+        xnnz = length(xnzind)
+        for i = 1:xnnz
+            rnzind[ir + i] = xnzind[i] + len
+        end
+        copy!(rnzval, ir+1, xnzval)
+        ir += xnnz
+        len += length(xj)
+    end
+    SparseVector(len, rnzind, rnzval)
 end
