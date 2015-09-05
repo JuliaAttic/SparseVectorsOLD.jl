@@ -32,7 +32,8 @@ let x = sprand(16, 0.5), x2 = sprand(16, 0.4)
 
     # dot
     let dv = dot(xf, xf2)
-        @test_approx_eq dot(x, x) sumabs2(x)
+        @test dot(x, x) == sumabs2(x)
+        @test dot(x2, x2) == sumabs2(x2)
         @test_approx_eq dot(x, x2) dv
         @test_approx_eq dot(x2, x) dv
         @test_approx_eq dot(full(x), x2) dv
