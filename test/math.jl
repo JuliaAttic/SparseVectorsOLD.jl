@@ -170,3 +170,10 @@ let x = sparsevector(Float64, 8)
     @test maxabs(x) == 0.0
     @test minabs(x) == 0.0
 end
+
+# Issue https://github.com/JuliaLang/julia/issues/14046
+let s14046 = sprand(5, 1.0)
+    z = sparsevector(Float64, 5)
+    @test z + s14046 == s14046
+    @test 2*z == z + z == z
+end
