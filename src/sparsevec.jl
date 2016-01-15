@@ -274,18 +274,18 @@ convert{Tv,TvS,TiS}(::Type{SparseVector{Tv}}, s::SparseVector{TvS,TiS}) =
 
 ### Rand Construction
 
-function sprand{T}(n::Integer, p::FloatingPoint, rfn::Function, ::Type{T})
+@compat function sprand{T}(n::Integer, p::AbstractFloat, rfn::Function, ::Type{T})
     I = randsubseq(1:convert(Int, n), p)
     V = rfn(T, length(I))
     SparseVector(n, I, V)
 end
 
-function sprand(n::Integer, p::FloatingPoint, rfn::Function)
+@compat function sprand(n::Integer, p::AbstractFloat, rfn::Function)
     I = randsubseq(1:convert(Int, n), p)
     V = rfn(length(I))
     SparseVector(n, I, V)
 end
 
-sprand{T}(n::Integer, p::FloatingPoint, ::Type{T}) = sprand(n, p, rand, T)
-sprand(n::Integer, p::FloatingPoint) = sprand(n, p, rand)
-sprandn(n::Integer, p::FloatingPoint) = sprand(n, p, randn)
+@compat sprand{T}(n::Integer, p::AbstractFloat, ::Type{T}) = sprand(n, p, rand, T)
+@compat sprand(n::Integer, p::AbstractFloat) = sprand(n, p, rand)
+@compat sprandn(n::Integer, p::AbstractFloat) = sprand(n, p, randn)

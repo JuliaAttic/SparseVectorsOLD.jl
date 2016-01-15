@@ -158,7 +158,7 @@ function reinterpret{T,Tv}(::Type{T}, x::AbstractSparseVector{Tv})
     SparseVector(length(x), copy(nonzeroinds(x)), reinterpret(T, nonzeros(x)))
 end
 
-float{Tv<:FloatingPoint}(x::AbstractSparseVector{Tv}) = x
+@compat float{Tv<:AbstractFloat}(x::AbstractSparseVector{Tv}) = x
 float(x::AbstractSparseVector) =
     SparseVector(length(x), copy(nonzeroinds(x)), float(nonzeros(x)))
 

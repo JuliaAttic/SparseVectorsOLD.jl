@@ -35,5 +35,5 @@ _dot(x::Number, y::Number) = conj(x) * y
 _dot(x::Real, y::Real) = x * y
 call(::DotFun, x::Number, y::Number) = _dot(x, y)
 
-typealias UnaryOp Union(Function, Func{1})
-typealias BinaryOp Union(Function, Func{2})
+@compat typealias UnaryOp Union{Function, Func{1}}
+@compat typealias BinaryOp Union{Function, Func{2}}
